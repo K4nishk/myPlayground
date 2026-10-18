@@ -1,0 +1,4 @@
+langgraph>=1.0
+langchain>=1.0          # init_chat_model, only needed with --model
+# plus the provider package for the model you use, e.g. one of:
+# langchain-anthropic  langchain-openai  langchain-google-genai
