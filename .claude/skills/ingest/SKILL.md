@@ -1,12 +1,13 @@
 ---
 name: ingest
-description: Absorb new or changed files in raw/ into the wiki and story bank. Use when brain.py status shows NEW/CHANGED/REMOVED raw sources, when the user drops or edits a file in raw/, or says "ingest", "absorb", "I added notes", "update the wiki from this".
+description: Absorb new or changed sources (raw/ plus globs in .brain/watch.txt) into the wiki and story bank. Use when brain.py status shows NEW/CHANGED/REMOVED raw sources, when the user drops or edits a file in raw/, or says "ingest", "absorb", "I added notes", "update the wiki from this".
 ---
 
 # Ingest — compile raw sources into the wiki
 
 1. Run `python3 tools/brain.py status`. Work through every NEW, CHANGED and
-   REMOVED file. For CHANGED, `git diff -- <file>` (or compare against what the
+   REMOVED file. If lint reports a possible credential in a source, tell the
+   user (kind + location only) and never copy that content into the wiki. For CHANGED, `git diff -- <file>` (or compare against what the
    wiki says) to see exactly what moved.
 2. Read each source in full. Briefly tell the user the key takeaways and which
    pages you'll touch (one short list).
@@ -28,7 +29,7 @@ description: Absorb new or changed files in raw/ into the wiki and story bank. U
 6. Update `wiki/index.md` rows (new pages, changed summaries/status/dates).
 7. Bookkeeping:
    ```bash
-   python3 tools/brain.py ingested raw/<file> [...]
+   python3 tools/brain.py ingested <source> [...]
    python3 tools/brain.py log ingest "<source title>" --note "touched: <pages>"
    python3 tools/brain.py lint      # must be 0 errors
    ```

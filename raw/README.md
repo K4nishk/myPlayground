@@ -20,4 +20,7 @@ Conventions
   (content hash) and the affected pages are re-synced. Prefer a *new* dated
   file for new information, so the history of what you knew when stays intact.
 - Files starting with `_` or `.` (templates, `.gitkeep`) are ignored.
+- A file that has to live elsewhere (e.g. a notebook beside its `.venv`) can be
+  tracked in place: add a glob to `.brain/watch.txt`. Notebooks are compared by
+  cell source, so re-running them doesn't count as a change.
 - Don't put secrets, credentials, or personal contact details here.

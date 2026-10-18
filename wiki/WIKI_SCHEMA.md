@@ -12,6 +12,7 @@ richer instead of making retrieval noisier.
 | Layer | Path | Owner | Rule |
 |---|---|---|---|
 | Raw sources | `raw/` | You | Immutable ground truth. The agent reads, never rewrites. |
+| Watched sources | globs in `.brain/watch.txt` (e.g. `problem_first_ai/*.ipynb`) | You | Same rules as `raw/`, for files that must stay where they live (a notebook next to its venv). |
 | Wiki | `wiki/` | Agent | Compiled knowledge: projects, concepts, notebooks, synthesis. |
 | Story bank | `story-bank/` | Agent drafts, you curate | Project narratives (STAR) for updates, reviews, interviews. |
 | Schema | `wiki/WIKI_SCHEMA.md`, `CLAUDE.md` | Both | The rules. Changes to it get a `refactor` log entry. |
@@ -89,7 +90,9 @@ evidence: []             # raw/story-updates/* files backing every number in Res
 ## Operations
 
 ### Ingest (`/ingest`) — absorb new or changed raw sources
-1. `python3 tools/brain.py status` → list of NEW / CHANGED / REMOVED raw files.
+1. `python3 tools/brain.py status` → list of NEW / CHANGED / REMOVED sources
+   (`raw/` plus watched files). Notebooks count as changed only when a cell's
+   source changes — re-running cells doesn't trigger a re-ingest.
 2. Read each source fully. For CHANGED files, `git diff` it to see what moved.
 3. Update every affected page — typically several: the project page, the
    concepts it touches, `overview.md`, the matching story. Create pages for new
@@ -111,8 +114,10 @@ evidence: []             # raw/story-updates/* files backing every number in Res
 ### Lint (`/lint`) — health check
 `brain.py lint` checks mechanically: broken links, missing frontmatter, pages
 missing from the index, orphans, log format and ordering, cited sources that
-don't exist, story structure, stale stories, unbacked results, pending raw
-drift. The agent then checks what a script can't: contradictions between
+don't exist, story structure, stale stories, unbacked results, pending source
+drift, and credential-shaped strings (a warning in your sources, an error in
+the wiki or story bank — values are never echoed). The agent then checks what
+a script can't: contradictions between
 pages, claims a newer source superseded, concepts mentioned on several pages
 that deserve their own page, and gaps worth a new source.
 

@@ -41,12 +41,14 @@ CLAUDE.md       the agent's operating manual
 
 ## How "self-healing" works
 
-1. `tools/brain.py` hashes every file in `raw/` and compares against
+1. `tools/brain.py` hashes every file in `raw/` (plus anything matched by
+   `.brain/watch.txt`, like `problem_first_ai/*.ipynb`) and compares against
    `.brain/manifest.json`. New or edited sources show up as pending.
 2. On every Claude Code session start a hook prints that status, so the agent
    absorbs changes before answering.
 3. Lint checks links (including `#anchors`), frontmatter, index coverage,
-   orphans, log order, cited sources, and story health. A story goes **stale**
+   orphans, log order, cited sources, story health, and credential-shaped
+   strings (reported by type and length, never by value). A story goes **stale**
    when its project page changes after the story was last synced, and gets
    flagged when it claims results without evidence.
 4. `/heal` repairs what lint finds and re-syncs stale stories — writing numbers

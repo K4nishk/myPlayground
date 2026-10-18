@@ -8,7 +8,7 @@ from what has been compiled. Full rules: [wiki/WIKI_SCHEMA.md](wiki/WIKI_SCHEMA.
 ## Every session
 
 1. The SessionStart hook runs `python3 tools/brain.py status`. Read its output.
-2. If raw sources are NEW or CHANGED, absorb them first (the `ingest` skill),
+2. If sources are NEW or CHANGED, absorb them first (the `ingest` skill),
    telling the user in one line what you're absorbing — unless they asked for
    something unrelated and urgent.
 3. If it reports errors or stale stories, run the `heal` skill once the user's
@@ -18,7 +18,7 @@ from what has been compiled. Full rules: [wiki/WIKI_SCHEMA.md](wiki/WIKI_SCHEMA.
 
 | Path | Rule |
 |---|---|
-| `raw/` | The user's sources. Read; **never edit or delete** unless the user asks. |
+| `raw/` + files matched by `.brain/watch.txt` | The user's sources. Read; **never edit or delete** unless the user asks. Never copy credential values from them anywhere. |
 | `wiki/` | Yours. Follow WIKI_SCHEMA.md: frontmatter, relative links, `## Sources`, index + log updates. |
 | `story-bank/` | Yours to draft, the user's to curate. Never invent results. |
 | `labs/` | Runnable code that wiki pages document. Keep it passing its tests. |
@@ -39,9 +39,9 @@ from what has been compiled. Full rules: [wiki/WIKI_SCHEMA.md](wiki/WIKI_SCHEMA.
 ## Commands
 
 ```bash
-python3 tools/brain.py status                       # what changed in raw/, health summary
+python3 tools/brain.py status                       # what changed in raw/ + watched files, health summary
 python3 tools/brain.py lint [--strict]              # full report
-python3 tools/brain.py ingested raw/<file> ...      # mark sources absorbed (after updating pages)
+python3 tools/brain.py ingested <source> ...        # mark sources absorbed (after updating pages)
 python3 tools/brain.py log <action> "<title>" --note "<pages touched>"
 python3 -m unittest discover -s tests               # tooling tests (stdlib only)
 cd labs/langgraph-two-call && python -m unittest test_two_call   # needs requirements.txt

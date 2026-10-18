@@ -120,7 +120,47 @@ class Drift(BrainFixture):
 
     def test_drift_is_a_lint_warning(self):
         self.write("raw/notes/b.md", "new")
-        self.assertFlags("raw source is new", level="warn")
+        self.assertFlags("source is new", level="warn")
+
+
+class WatchedSources(BrainFixture):
+    NB = '{"cells": [{"cell_type": "code", "source": ["print(1)"], "outputs": %s}], "metadata": {}}'
+
+    def setUp(self):
+        super().setUp()
+        self.write(".brain/watch.txt", "# comment\nlab/*.ipynb\n")
+        self.write("lab/demo.ipynb", self.NB % "[]")
+        self.write("lab/.venv/lib/other.ipynb", self.NB % "[]")
+
+    def test_watched_glob_is_a_source_and_hidden_dirs_are_skipped(self):
+        self.assertEqual(self.brain.drift()["new"], ["lab/demo.ipynb"])
+
+    def test_rerunning_a_notebook_is_not_a_change(self):
+        self.brain.mark_ingested(["lab/demo.ipynb"])
+        self.write("lab/demo.ipynb", self.NB % '[{"output_type": "stream", "text": ["1"]}]')
+        self.assertEqual(self.brain.drift()["changed"], [])
+        self.write("lab/demo.ipynb", self.NB.replace("print(1)", "print(2)") % "[]")
+        self.assertEqual(self.brain.drift()["changed"], ["lab/demo.ipynb"])
+
+    def test_untracked_paths_are_rejected(self):
+        with self.assertRaises(SystemExit):
+            self.brain.mark_ingested(["lab/.venv/lib/other.ipynb"])
+
+
+class SecretChecks(BrainFixture):
+    KEY = "sk-or-v1-" + "0123456789abcdef" * 4
+
+    def test_credential_in_notebook_output_is_a_warning_with_location(self):
+        self.write(".brain/watch.txt", "lab/*.ipynb\n")
+        out = '[{"output_type": "stream", "text": ["KEY: %s"]}]' % self.KEY[:20]
+        self.write("lab/demo.ipynb", WatchedSources.NB % out)
+        self.assertFlags("possible credential in cell 0 output", level="warn")
+        self.assertFalse(any(self.KEY[:12] in m for m in self.messages()), "never echo the value")
+
+    def test_credential_in_wiki_is_an_error(self):
+        self.write("wiki/concepts/c.md", PAGE.format(
+            title="C", type="concept", updated="2026-10-18", body=f"[P](../projects/p.md) {self.KEY}"))
+        self.assertFlags("credential-shaped string")
 
 
 class WikiChecks(BrainFixture):

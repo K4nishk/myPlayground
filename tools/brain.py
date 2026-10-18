@@ -1,15 +1,18 @@
 #!/usr/bin/env python3
 """Second-brain maintenance CLI.
 
-Deterministic bookkeeping for the LLM-maintained wiki: it detects which raw
+Deterministic bookkeeping for the LLM-maintained wiki: it detects which
 sources have not been absorbed yet, lints the wiki and story bank, and appends
 to the log. The LLM does the writing; this script tells it what needs writing.
+
+Sources are everything under raw/ plus any glob listed in .brain/watch.txt
+(for files that must stay where they are, e.g. a notebook next to its venv).
 
 Stdlib only, so it runs anywhere python3 does.
 
     python3 tools/brain.py status             # pending ingests + health summary
     python3 tools/brain.py lint [--strict]    # full report, exit 1 on errors
-    python3 tools/brain.py ingested PATH...   # record raw sources as absorbed
+    python3 tools/brain.py ingested PATH...   # record sources as absorbed
     python3 tools/brain.py log ACTION TITLE   # append "## [date] action | title"
 """
 
@@ -39,6 +42,19 @@ DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 LINK = re.compile(r"\[[^\]]*\]\(([^)\s]+)(?:\s+\"[^\"]*\")?\)")
 FENCE = re.compile(r"^(```|~~~).*?^\1", re.M | re.S)
 INLINE_CODE = re.compile(r"`[^`\n]*`")
+
+# High-precision credential shapes. Matches are reported by kind and length only.
+SECRETS = {
+    "OpenAI/OpenRouter-style key": re.compile(r"\bsk-[A-Za-z0-9_-]{16,}"),
+    "Arize-style key": re.compile(r"\bak-[0-9a-f]{8}-[0-9a-f]{4}"),
+    "GitHub token": re.compile(r"\b(?:gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,})"),
+    "Google API key": re.compile(r"\bAIza[0-9A-Za-z_-]{30,}"),
+    "Hugging Face token": re.compile(r"\bhf_[A-Za-z0-9]{20,}"),
+    "LangSmith key": re.compile(r"\blsv2_[A-Za-z0-9_]{20,}"),
+    "AWS access key": re.compile(r"\bAKIA[0-9A-Z]{16}\b"),
+    "Slack token": re.compile(r"\bxox[baprs]-[A-Za-z0-9-]{10,}"),
+    "private key": re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY-----"),
+}
 
 
 @dataclass(frozen=True)
@@ -135,6 +151,33 @@ def anchors(text: str) -> set[str]:
     return set(seen)
 
 
+def notebook_text(raw: bytes) -> str | None:
+    """Cell types + sources of a .ipynb, ignoring outputs and execution counts."""
+    try:
+        cells = json.loads(raw)["cells"]
+    except (ValueError, KeyError, TypeError):
+        return None
+    return json.dumps([(c.get("cell_type"), "".join(c.get("source", ""))) for c in cells])
+
+
+def find_secrets(text: str) -> list[tuple[str, int]]:
+    return [(kind, len(m.group(0))) for kind, rx in SECRETS.items() for m in rx.finditer(text)]
+
+
+def notebook_secrets(raw: bytes) -> list[tuple[str, str, int]] | None:
+    """(where, kind, length) per credential-shaped string in a notebook's cells."""
+    try:
+        cells = json.loads(raw)["cells"]
+    except (ValueError, KeyError, TypeError):
+        return None
+    hits = []
+    for i, cell in enumerate(cells):
+        parts = {"source": "".join(cell.get("source", "")), "output": json.dumps(cell.get("outputs", []))}
+        for where, text in parts.items():
+            hits += [(f"cell {i} {where}", kind, n) for kind, n in find_secrets(text)]
+    return hits
+
+
 def as_list(value: object) -> list[str]:
     if value is None:
         return []
@@ -154,21 +197,30 @@ class Brain:
         self.wiki = root / "wiki"
         self.stories = root / "story-bank"
         self.manifest_path = root / ".brain" / "manifest.json"
+        self.watch_path = root / ".brain" / "watch.txt"
 
     def rel(self, path: Path) -> str:
         return path.relative_to(self.root).as_posix()
 
-    # ----- raw-source drift ------------------------------------------------- #
+    # ----- source drift ----------------------------------------------------- #
 
-    def raw_files(self) -> list[Path]:
-        if not self.raw.exists():
+    @staticmethod
+    def _visible(path: Path, base: Path) -> bool:
+        """Skip templates, READMEs, and anything under a hidden or _ folder (.venv, checkpoints)."""
+        return path.is_file() and path.name != "README.md" and not any(
+            part.startswith((".", "_")) for part in path.relative_to(base).parts)
+
+    def watch_globs(self) -> list[str]:
+        if not self.watch_path.exists():
             return []
-        return sorted(
-            p for p in self.raw.rglob("*")
-            if p.is_file()
-            and p.name != "README.md"
-            and not any(part.startswith((".", "_")) for part in p.relative_to(self.raw).parts)
-        )
+        lines = (line.split("#", 1)[0].strip() for line in self.watch_path.read_text().splitlines())
+        return [line for line in lines if line]
+
+    def source_files(self) -> list[Path]:
+        files = set(p for p in self.raw.rglob("*") if self._visible(p, self.raw)) if self.raw.exists() else set()
+        for pattern in self.watch_globs():
+            files.update(p for p in self.root.glob(pattern) if self._visible(p, self.root))
+        return sorted(files)
 
     def load_manifest(self) -> dict:
         if not self.manifest_path.exists():
@@ -182,11 +234,15 @@ class Brain:
 
     @staticmethod
     def digest(path: Path) -> str:
-        return hashlib.sha256(path.read_bytes()).hexdigest()
+        """Content hash. Notebooks hash cell sources only, so re-running cells isn't a change."""
+        raw = path.read_bytes()
+        if path.suffix == ".ipynb" and (text := notebook_text(raw)) is not None:
+            raw = text.encode()
+        return hashlib.sha256(raw).hexdigest()
 
     def drift(self) -> dict[str, list[str]]:
         tracked = self.load_manifest()["sources"]
-        current = {self.rel(p): p for p in self.raw_files()}
+        current = {self.rel(p): p for p in self.source_files()}
         new, changed = [], []
         for rel, path in current.items():
             if rel not in tracked:
@@ -198,13 +254,14 @@ class Brain:
 
     def mark_ingested(self, paths: list[str]) -> list[str]:
         manifest = self.load_manifest()
+        sources = {p.resolve() for p in self.source_files()}
         recorded = []
         for arg in paths:
             path = Path(arg).resolve()
             if not path.exists():
                 path = (self.root / arg).resolve()
-            if not path.is_file() or not path.is_relative_to(self.raw.resolve()):
-                raise SystemExit(f"not a file under raw/: {arg}")
+            if path not in sources:
+                raise SystemExit(f"not a tracked source (raw/ or .brain/watch.txt): {arg}")
             rel = self.rel(path)
             manifest["sources"][rel] = {"sha256": self.digest(path), "ingested": today()}
             recorded.append(rel)
@@ -230,14 +287,15 @@ class Brain:
         issues += self._lint_wiki()
         issues += self._lint_log()
         issues += self._lint_stories()
+        issues += self._lint_secrets()
         if not include_drift:
             return issues
         drift = self.drift()
         for kind in ("new", "changed"):
             for rel in drift[kind]:
-                issues.append(Issue("warn", rel, f"raw source is {kind}; run /ingest"))
+                issues.append(Issue("warn", rel, f"source is {kind}; run /ingest"))
         for rel in drift["removed"]:
-            issues.append(Issue("warn", rel, "raw source was deleted; check pages that cite it"))
+            issues.append(Issue("warn", rel, "source was deleted; check pages that cite it"))
         return issues
 
     def _markdown_files(self) -> list[Path]:
@@ -248,6 +306,23 @@ class Brain:
             if (self.root / extra).exists():
                 files.append(self.root / extra)
         return files
+
+    def _lint_secrets(self) -> list[Issue]:
+        """Credentials must never reach the wiki (error); in your own sources they're a warning."""
+        issues = []
+        for path in self.source_files():
+            raw = path.read_bytes()
+            hits = notebook_secrets(raw) if path.suffix == ".ipynb" else None
+            if hits is None:
+                hits = [("", kind, n) for kind, n in find_secrets(raw.decode(errors="ignore"))]
+            for where, kind, n in hits:
+                at = f" in {where}" if where else ""
+                issues.append(Issue("warn", self.rel(path),
+                                    f"possible credential{at} ({kind}, {n} chars): rotate it, then remove it"))
+        for page in self._markdown_files():
+            for kind, n in find_secrets(page.read_text()):
+                issues.append(Issue("error", self.rel(page), f"credential-shaped string ({kind}, {n} chars)"))
+        return issues
 
     def _lint_links(self) -> list[Issue]:
         issues = []
@@ -388,7 +463,7 @@ def cmd_status(brain: Brain, _args) -> int:
 
     print(f"Second brain status ({today()})")
     tracked = len(brain.load_manifest()["sources"])
-    print(f"  raw sources: {tracked} absorbed, {len(drift['new'])} new, "
+    print(f"  sources: {tracked} absorbed, {len(drift['new'])} new, "
           f"{len(drift['changed'])} changed, {len(drift['removed'])} removed")
     for kind in ("new", "changed", "removed"):
         for rel in drift[kind]:
@@ -397,7 +472,7 @@ def cmd_status(brain: Brain, _args) -> int:
 
     steps = []
     if pending or drift["removed"]:
-        steps.append("/ingest to absorb raw changes")
+        steps.append("/ingest to absorb source changes")
     if stale or c["error"]:
         steps.append("/heal to repair the wiki and story bank")
     print("  next: " + ("; ".join(steps) if steps else "nothing pending — ask away (/query)"))
@@ -441,7 +516,7 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("status", help="pending ingests and health summary")
     lint = sub.add_parser("lint", help="full health report")
     lint.add_argument("--strict", action="store_true", help="treat warnings as failures")
-    ing = sub.add_parser("ingested", help="record raw sources as absorbed")
+    ing = sub.add_parser("ingested", help="record sources as absorbed")
     ing.add_argument("paths", nargs="+")
     log = sub.add_parser("log", help="append an entry to wiki/log.md")
     log.add_argument("action")
