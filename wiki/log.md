@@ -31,3 +31,7 @@ Recent activity: `grep "^## \[" wiki/log.md | tail -5`.
 - created: notebooks/langchain-langgraph-demo, concepts/llm-tracing, labs/langgraph-two-call/fortune_extension.ipynb (+ test_notebook.py)
 - rewrote: notebooks/langgraph-two-call-extension around the real cells; added gotchas to concepts/langgraph-state-graphs
 - verified: companion notebook executed offline (28 cells, all checks pass); planned multi-agent prose review stopped at the session limit
+
+## [2026-10-18] lint | Proofread of the notebook pages (completes the review cut off by the session limit)
+- fixed: RetryPolicy backoff timing (extension plan, state-graph gotchas, companion), OpenRouter retry wording, cell-3 status + history-rewrite limits (notebook review)
+- all other claims checked against the verified findings; no further changes

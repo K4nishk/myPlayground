@@ -46,6 +46,10 @@ the OpenRouter value is the public `sk-or-v1-` prefix plus 11 of its 64 secret h
 value is a 3-character prefix plus 17 characters of a UUID-shaped body. Neither is usable on its own, but
 both are now public, so the risk is low but real.
 
+> **Status (2026-10-18):** the prints are commented out in your local copy, not yet pushed. Rotation is
+> deferred; the keys expire within a month. A history rewrite to hide the old output is pending your
+> decision (see step 5).
+
 Do these steps **in this order**. If you rotate first and then re-run the old cell 3, the *new* key's
 prefix gets written into the notebook.
 
@@ -76,8 +80,10 @@ prefix gets written into the notebook.
    outputs already committed stay in HEAD. The filter lives in `.git/config`, so run `--install` once in
    every clone.
 5. **Commit on top and squash-merge PR #1.** The squash means `main` never contains the outputs.
-   **Don't rewrite history.** The commit is already in a public PR and reachable by SHA, and rotating
-   the keys makes the leaked prefixes worthless anyway.
+   **A history rewrite only hides the output.** Rewriting `sandbox` and force-pushing removes the
+   output from the branch and from the PR diff. But GitHub keeps the old commits reachable by SHA (the
+   PR #1 timeline links them) until GitHub Support purges them, and any existing clone keeps a copy.
+   Only rotating the keys makes the leaked prefixes worthless.
 
 `python3 tools/brain.py lint` flags this pattern now: both the leaked output and the
 `os.environ[...][:N]` code that caused it. Values are never printed.
@@ -128,9 +134,9 @@ The fix is [Step 2 of the plan](langgraph-two-call-extension.md#step-2--harden-t
 - **Spell the reasoning effort exactly, in lowercase.** `reasoning={"effort": "minimal"}` is the correct,
   first-class ChatOpenRouter parameter. A typo or capital letter (`"Minimal"`) is silently dropped on the
   client, and the model runs at its default effort, using more tokens than cell 5 intends.
-- **Retries.** The OpenRouter SDK already retries 5xx and connection errors (2 retries). It doesn't
-  retry 429s or dropped connections. A LangGraph `RetryPolicy()` on a node catches those, but would also
-  retry a 401 (bad key) or 402 (out of credits) three times.
+- **Retries.** The OpenRouter SDK already retries 5xx responses and failures to connect (2 retries).
+  It doesn't retry a 429 (rate limit) or a connection dropped mid-response. A LangGraph `RetryPolicy()`
+  on a node catches those, but would also retry a 401 (bad key) or 402 (out of credits) three times.
 - **Cell 10** prints the whole `AIMessage`: a 1.9k-character encrypted reasoning blob plus provider IDs.
   It's harmless but noisy. Print `.text` or `usage_metadata` instead.
 - **`draw_mermaid_png()`** (cells 21/34/44) sends the graph structure to the public mermaid.ink API, so it

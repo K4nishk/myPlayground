@@ -154,7 +154,9 @@ sentiment_graph = sentiment_builder.compile()
 - **Why two policies.** LangGraph's default `retry_on` returns `False` for `ValueError`, `TypeError` and
   `LookupError` (which includes `KeyError`), so a bare `RetryPolicy(max_attempts=3)` would *not* retry this
   failure. The first policy re-asks on `ValueError`; the second keeps the default retries for transient
-  errors such as 429s and dropped connections. Each retry adds about 0.5–1 s of backoff.
+  errors such as 429s and dropped connections. Backoff is 0.5 s, doubling each time, plus up to 1 s
+  of random jitter: the first retry waits 0.5–1.5 s, and a persistent failure raises after about
+  1.5–3.5 s.
 - **It still fails loudly** if the model keeps answering off-list: you get a clear `ValueError` after 3
   calls.
 - **Re-run the builder.** Redefining `analyze_sentiment` alone leaves the compiled graph on the old node.

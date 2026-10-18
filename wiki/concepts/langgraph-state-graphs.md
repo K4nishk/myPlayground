@@ -73,7 +73,7 @@ Each of these was reproduced by running your notebook's cells with a fake model:
 | Router returns a label missing from the path map | Bare `KeyError: '<label>'` raised inside LangGraph's branch code; the only context is "During task with name …" | Validate in the node and raise a clear error ([Step 2](../notebooks/langgraph-two-call-extension.md#step-2--harden-the-router)) |
 | `Literal[...]` on a `TypedDict` field | Documentation and JSON schema only; values aren't checked at runtime | Validate in nodes, or use a Pydantic state (raises `ValidationError` on read) |
 | `Literal[...]` on a router's return type | Ignored at runtime when a path map is given; *without* one it defines the targets, so its values must be node names or `"__end__"` | Use node names when relying on inference (Step 5) |
-| `RetryPolicy()` defaults | `retry_on` returns `False` for `ValueError`, `TypeError`, `LookupError` (incl. `KeyError`); backoff starts at 0.5 s, ×2, with jitter | Pass `retry_on=`; a list of policies applies the first that matches |
+| `RetryPolicy()` defaults | `retry_on` returns `False` for `ValueError`, `TypeError`, `LookupError` (incl. `KeyError`); backoff starts at 0.5 s and doubles, plus up to 1 s of random jitter | Pass `retry_on=`; a list of policies applies the first that matches |
 | Default `recursion_limit` | 10,007 steps in 1.2.16, so it's no safety net for a loop | Pass `recursion_limit` on every invoke of a looping graph |
 | Error *after* a node wrote state, with a checkpointer | Thread looks finished (`next == ()`); resuming does nothing; downstream keys are missing | Fail inside the node before returning an update |
 | `await a` then `await b` | Runs sequentially | `asyncio.gather(...)` or `graph.abatch(...)`, with `return_exceptions=True` |
