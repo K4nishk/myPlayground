@@ -1,0 +1,11 @@
+# problem_first_ai/LangChain_LangGraph_Demo.ipynb (+ labs/langgraph-two-call/fortune_extension.ipynb)
+# Floors = versions verified on 2026-10-18 by a fresh venv install and an offline run of the graph cells.
+python-dotenv>=1.2.4                              # cell 3: load_dotenv
+langchain>=1.4.6,<2                               # cell 5: init_chat_model
+langchain-core>=1.6.12,<2                         # cells 5, 7: messages, ChatPromptTemplate
+langchain-openrouter>=0.2.9,<1                    # cell 5: model_provider="openrouter" -> ChatOpenRouter
+langgraph>=1.2.16,<2                              # cells 15+: StateGraph, START, END
+requests>=2.32                                    # cells 21, 34, 44: draw_mermaid_png() calls the mermaid.ink API
+arize-otel>=0.14.1                                # cell 28: arize.otel.register
+openinference-instrumentation-langchain>=0.1.79   # cell 28: LangChainInstrumentor
+ipykernel>=7.4.0                                  # register this .venv as the "Python (problem_first_ai)" kernel

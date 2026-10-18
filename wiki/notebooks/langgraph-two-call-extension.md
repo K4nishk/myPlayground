@@ -2,391 +2,403 @@
 title: LangGraph Two-Call Workflow — Extension Plan
 type: notebook
 status: active
-tags: [langgraph, agents, notebook, learning, evaluation]
-sources: [raw/roadmaps/2026-10-18-ai-infra-project-roadmap.md]
-related: [concepts/langgraph-state-graphs.md, concepts/llm-evaluation.md, projects/01-dockerfile-generator.md, projects/03-devops-aiops-platform.md, projects/06-sovereign-ai-engine.md]
+tags: [langgraph, agents, notebook, learning, evaluation, tracing]
+sources: [raw/roadmaps/2026-10-18-ai-infra-project-roadmap.md, problem_first_ai/LangChain_LangGraph_Demo.ipynb]
+related: [notebooks/langchain-langgraph-demo.md, concepts/langgraph-state-graphs.md, concepts/llm-tracing.md, concepts/llm-evaluation.md, projects/01-dockerfile-generator.md, projects/03-devops-aiops-platform.md, projects/06-sovereign-ai-engine.md]
 updated: 2026-10-18
 ---
 
 # LangGraph Two-Call Workflow — Extension Plan
 
-Goal from the [roadmap](../../raw/roadmaps/2026-10-18-ai-infra-project-roadmap.md):
-go from basic agentic state graphs to a robust **two-call workflow** with
-explicit State, Nodes and Edges, and document the state schema, graph
-compilation, and execution-trace handling.
+**Goal** ([roadmap](../../raw/roadmaps/2026-10-18-ai-infra-project-roadmap.md)): go from basic state graphs
+to a **robust two-call workflow** with explicit State, Nodes and Edges, and document the state schema,
+graph compilation, and execution-trace handling.
 
-**Runnable code:** [`labs/langgraph-two-call/two_call.py`](../../labs/langgraph-two-call/two_call.py)
-(tests: [`test_two_call.py`](../../labs/langgraph-two-call/test_two_call.py),
-notebook: [`two_call_walkthrough.ipynb`](../../labs/langgraph-two-call/two_call_walkthrough.ipynb)).
-Verified against `langgraph` 1.2 on 2026-10-18: 9/9 offline tests pass, plus
-a run against a local OpenAI-compatible endpoint.
+**Re-targeted on 2026-10-18 to your actual notebook,**
+[`LangChain_LangGraph_Demo.ipynb`](../../problem_first_ai/LangChain_LangGraph_Demo.ipynb)
+(review: [notebook review](langchain-langgraph-demo.md)). The first version of this plan assumed a
+messages-only quickstart. Your notebook is well past that, so every step below builds on objects you
+already have: `model`, `fortune_prompt`, `generate_fortune`, cell 32's `builder`, and the sentiment graph.
+All code uses your style: `ChatPromptTemplate`, the global `model`, and `TypedDict` state.
 
-Concept background: [LangGraph state graphs](../concepts/langgraph-state-graphs.md).
+**Runnable companion:** [`labs/langgraph-two-call/fortune_extension.ipynb`](../../labs/langgraph-two-call/fortune_extension.ipynb).
+It holds every step as cells, and `OFFLINE = True` by default spends no credits. On 2026-10-18 it was
+executed in a real kernel: all 28 cells ran and every check passed. `test_notebook.py` re-runs it.
+Paste the *Helpers* cell and any step into your notebook after cell 50, or run the companion on its own.
 
-## Step 0 — Where you are (assumed)
+## Where you are
 
-> **Assumption:** your notebook wasn't in the repo or in Google Drive when this
-> page was written, so the plan starts from the standard LangGraph quickstart.
-> Export it to `raw/notebooks/` and run `/ingest`; the steps below get
-> re-targeted to what you actually have.
+| Already in your notebook | Cells |
+|---|---|
+| `TypedDict` state with named fields | 15, 30, 38 |
+| Nodes that return only the keys they change | 17, 30, 40 |
+| Sequential edges, `START`/`END`, `compile()` | 19, 32 |
+| Conditional edge with a path map | 42 |
+| Diagrams, `stream_mode="values"`, `ainvoke` | 21/34/44, 24, 26/50 |
+| Arize tracing (OpenInference) | 28, 52 |
+| **Classify → respond** pattern | 38–50 |
+| Sequential two-call (fortune → joke), the shape of **generate → critique** | 30–36 |
 
-```python
-from typing import Annotated, TypedDict
-from langgraph.graph import StateGraph, START, END
-from langgraph.graph.message import add_messages
+Not yet: `stream_mode="updates"`, checkpointers / `thread_id` / state history, structured output, retry
+policies, loops and `recursion_limit`, tests.
 
-class State(TypedDict):
-    messages: Annotated[list, add_messages]
+## The plan at a glance
 
-def chatbot(state: State):
-    return {"messages": [llm.invoke(state["messages"])]}
-
-builder = StateGraph(State)
-builder.add_node("chatbot", chatbot)
-builder.add_edge(START, "chatbot")
-builder.add_edge("chatbot", END)
-graph = builder.compile()
-graph.invoke({"messages": [("user", "hi")]})
-```
-
-What's missing for a two-call workflow: **named fields** in state (not just a
-message list), a second node that *reads* the first node's output, a way to
-see what each node did, and tests.
-
-## Which pattern, and why
-
-| Pattern | State keys | Node 1 → Node 2 | Where it pays off in the roadmap |
+| Step | Builds on | Adds | Model calls |
 |---|---|---|---|
-| **Generate → critique** (built here) | `question → draft → critique` | answer → structured review | [01](../projects/01-dockerfile-generator.md) generate→verify→repair; a mini LLM-judge for [06](../projects/06-sovereign-ai-engine.md) |
-| **Classify → respond** (variant B, built) | `message → classification → response` | label → tailored reply, routed | [03](../projects/03-devops-aiops-platform.md) alert triage |
-| Explain → summarize (variant C) | `concept → explanation → eli5` | depth → compression | Story-bank "explain it simply" drafts |
-| Question → answer (variant D) | `domain → question → answer` | ask → structured answer | Interview prep from the wiki |
+| [1 Offline harness](#step-1--an-offline-test-harness) | cells 32, 42, 50 | fake `model`, prompt recorder, asserts | 0 |
+| [2 Harden the router](#step-2--harden-the-router) | cells 38–42 | validation in the node, `RetryPolicy` | 0 to test |
+| [3 Generate → critique](#step-3--generate-then-critique) | cell 30 (`generate_fortune` reused), cell 7's brief | structured rubric via `with_structured_output` | 2 per run |
+| [4 Trace handling](#step-4--execution-trace-handling) | cell 32's `builder`, cell 28 | updates stream, checkpointer, history, Arize session | 2 per run |
+| [5 Reflection loop](#step-5--bounded-reflection-loop) | steps 3 + cell 42's skill | conditional loop, budget, `recursion_limit` | ≤ 6 per run |
+| [6 Concurrency](#step-6--make-cell-50-actually-concurrent) | cell 50 | `asyncio.gather`, `return_exceptions` | same calls, about half the time |
+| [7 Sovereign A/B](#step-7--point-it-at-a-sovereign-model) | cell 5 | the same cells against a local vLLM model | local |
 
-Generate → critique is the primary build because its second node *judges* the
-first, which is the core move in both the Dockerfile agent and the Sovereign
-AI evaluation.
+## Step 1 — An offline test harness
 
-```mermaid
-flowchart LR
-  S((START)) --> G[generate<br/>LLM call 1<br/>writes draft]
-  G --> C[critique<br/>LLM call 2<br/>reads draft, writes critique]
-  C --> E((END))
-```
-
-## Step 1 — Define the State schema explicitly
+Every node in your notebook looks up the global `model` **when it runs**. So temporarily swapping
+`model` for a fake tests your real cells unchanged, with zero credits spent. A callback that records
+each prompt proves that node 2 received node 1's output.
 
 ```python
-import operator
-from typing import Annotated, Literal, TypedDict
+from contextlib import contextmanager
+from langchain_core.callbacks import BaseCallbackHandler
+from langchain_core.language_models.fake_chat_models import GenericFakeChatModel
+from langchain_core.messages import AIMessage
 
-class TraceEvent(TypedDict):
-    node: str
-    ms: float
-    out_chars: int
+class FakeModel(GenericFakeChatModel):
+    """Scripted replies; bind_tools is a no-op so with_structured_output works offline."""
+    def bind_tools(self, tools, **kwargs):
+        return self
 
-class Critique(TypedDict):
-    score: int                              # 1-10
-    gaps: list[str]                         # what the answer leaves out
-    failure_modes: list[str]                # where acting on the answer goes wrong
+def tool_reply(name, **args):
+    """A scripted structured reply: the model 'calling' the schema named `name`."""
+    return AIMessage("", tool_calls=[{"name": name, "args": args, "id": "call_1"}])
+
+@contextmanager
+def fake_model(*replies):
+    """Swap the global `model` for scripted replies; restore the real one afterwards."""
+    global model
+    msgs = [r if isinstance(r, AIMessage) else AIMessage(r) for r in replies]
+    real, model = model, FakeModel(messages=iter(msgs))
+    try:
+        yield
+    finally:
+        model = real
+
+class PromptRecorder(BaseCallbackHandler):
+    def __init__(self):
+        self.prompts = []
+    def on_chat_model_start(self, serialized, messages, **kwargs):
+        self.prompts.append(messages[0][-1].content)
+
+rec = PromptRecorder()
+with fake_model("FORTUNE-XYZ", "JOKE-1"):
+    out = graph.invoke({"question": "q?"}, {"callbacks": [rec]})
+assert out == {"question": "q?", "fortune": "FORTUNE-XYZ", "joke": "JOKE-1"}
+assert "FORTUNE-XYZ" in rec.prompts[1]                  # the handoff, proven
+
+with fake_model("sad", "COMFORT"):
+    assert (await sentiment_graph.ainvoke({"sentence": "s"}))["message"] == "COMFORT"
+```
+
+Why `bind_tools` is overridden: plain `GenericFakeChatModel.with_structured_output` raises
+`NotImplementedError`. ChatOpenRouter's default structured-output method is a forced tool call, and
+`tool_reply(...)` replays exactly that path. In your notebook, run this **before cell 28**, or the
+fake runs will show up as spans in your Arize project.
+
+## Step 2 — Harden the router
+
+**What breaks.** Cell 40 only does `.strip().lower()`, so any reply other than exactly `happy` or `sad`
+reaches the path map, and LangGraph raises a bare `KeyError: 'happy.'`. The traceback adds only "During
+task with name 'analyze_sentiment'". That covers `"Happy."`, `"**happy**"`, `"neutral"`, `"positive"` and
+`""`. Typing `sentiment` as `Literal["happy", "sad"]` doesn't help on its own, because `TypedDict` values
+aren't checked at runtime; it only documents the contract and adds an enum to the schema.
+
+**Fix: validate inside the node, then let LangGraph re-ask.**
+
+```python
+import re
+from typing import Literal
+from langgraph.types import RetryPolicy
+
+class SentimentState(TypedDict):
+    sentence: str
+    sentiment: Literal["happy", "sad"]   # documents the contract; not enforced at runtime
+    message: str
+
+def analyze_sentiment(state: SentimentState) -> dict:
+    prompt = sentiment_prompt.invoke({"sentence": state["sentence"]})
+    reply = model.invoke(prompt).text
+    label = re.sub(r"[^a-z]", "", reply.lower())   # "Happy." / "**happy**" / " HAPPY\n" -> "happy"
+    if label not in ("happy", "sad"):                 # "not happy" -> "nothappy" -> rejected, not misrouted
+        raise ValueError(f"Classifier replied {reply!r}; expected 'happy' or 'sad'")
+    return {"sentiment": label}
+
+def route_sentiment(state: SentimentState) -> Literal["happy", "sad"]:
+    return state["sentiment"]
+
+sentiment_builder = StateGraph(SentimentState)
+sentiment_builder.add_node(
+    "analyze_sentiment",
+    analyze_sentiment,
+    retry_policy=[RetryPolicy(max_attempts=3, retry_on=ValueError), RetryPolicy()],
+)
+# ... happy_response / sad_response nodes and the edges exactly as in cell 42, then:
+sentiment_graph = sentiment_builder.compile()
+```
+
+- **Why validate in the node.** If the node raises, nothing gets written to state. That matters once a
+  checkpointer is added: a crash *after* writing leaves a thread that looks finished
+  (`next == ()`) but has no `message`.
+- **Why two policies.** LangGraph's default `retry_on` returns `False` for `ValueError`, `TypeError` and
+  `LookupError` (which includes `KeyError`), so a bare `RetryPolicy(max_attempts=3)` would *not* retry this
+  failure. The first policy re-asks on `ValueError`; the second keeps the default retries for transient
+  errors such as 429s and dropped connections. Each retry adds about 0.5–1 s of backoff.
+- **It still fails loudly** if the model keeps answering off-list: you get a clear `ValueError` after 3
+  calls.
+- **Re-run the builder.** Redefining `analyze_sentiment` alone leaves the compiled graph on the old node.
+- Once Step 3 has introduced `with_structured_output`, the classifier can use a
+  `Literal["happy", "sad"]` schema too. ChatOpenRouter sends it as a forced tool call with an enum.
+
+Regression checks (in the companion): `"Happy."` routes to happy; `"neutral"` followed by `"sad"` routes to
+sad after 3 model calls; a persistent off-list reply raises `ValueError`.
+
+## Step 3 — Generate, then critique
+
+This has the same shape as fortune → joke, but node 2 **judges** node 1 instead of riffing on it.
+`generate_fortune` (cell 30) is reused unchanged. The rubric checks the brief already in cell 7's
+system prompt: funny, slightly exaggerated, insightful, 1–2 sentences.
+
+```python
+from pydantic import BaseModel, Field
+
+class FortuneCritique(BaseModel):
+    score: int = Field(ge=1, le=10, description="How well the fortune meets the brief, 1-10")
+    funny: bool
+    insightful: bool
+    fix: str = Field(description="The single most useful change to make")
     verdict: Literal["pass", "revise"]
 
-class CritiqueInput(TypedDict):             # the public contract: callers pass only this
+class CritiqueState(TypedDict, total=False):
     question: str
+    fortune: str            # written by generate_fortune (cell 30, reused as-is)
+    critique: dict          # written by critique_fortune
+    critique_error: str     # set instead of crashing when the critic's reply can't be parsed
 
-class CritiqueState(CritiqueInput, total=False):
-    draft: str                              # written by generate (and revise)
-    critique: Critique                      # written by critique
-    critique_raw: str                       # raw reviewer reply, for debugging
-    critique_error: str                     # set when the reply couldn't be parsed
-    revisions: int
-    trace: Annotated[list[TraceEvent], operator.add]   # reducer: append, never overwrite
+critique_prompt = ChatPromptTemplate([
+    ("system", "You are a tough editor of fortune-teller replies. The brief: funny, slightly "
+               "exaggerated, but insightful, 1-2 sentences. Score the fortune against the brief. "
+               "Use verdict 'revise' when the score is below 7."),
+    ("human", "Question: {question}\n\nFortune to review: {fortune}"),
+])
+
+def critique_fortune(state: CritiqueState) -> dict:
+    critic = model.with_structured_output(FortuneCritique, include_raw=True)   # bound per call
+    prompt = critique_prompt.invoke({"question": state["question"], "fortune": state["fortune"]})
+    out = critic.invoke(prompt)
+    if out["parsed"] is None:   # parsing_error is None when the model answered in prose
+        reason = out["parsing_error"] or f"no structured reply: {out['raw'].text[:80]!r}"
+        return {"critique_error": str(reason)[:200]}
+    return {"critique": out["parsed"].model_dump(), "critique_error": ""}
+
+critique_builder = StateGraph(CritiqueState)
+critique_builder.add_node("generate_fortune", generate_fortune)
+critique_builder.add_node("critique_fortune", critique_fortune)
+critique_builder.add_edge(START, "generate_fortune")
+critique_builder.add_edge("generate_fortune", "critique_fortune")
+critique_builder.add_edge("critique_fortune", END)
+critique_graph = critique_builder.compile()
 ```
 
-Design rules:
+- **State schema.** There is one writer per key. The raw failure reason goes in `critique_error`, next to
+  the parsed rubric, so a bad reply is visible in state rather than raised.
+- **Bind the critic inside the node.** A critic built at cell level keeps the *real* model, so it spends
+  credits even inside `fake_model(...)`.
+- **The prose-reply trap.** With `include_raw=True`, a reply that skips the tool call gives
+  `parsed=None` *and* `parsing_error=None`. A naive `str(parsing_error)` would record `"None"`.
+- Scores outside 1–10, missing fields and unknown tool names all land in `critique_error`.
 
-- **One writer per key** (except `trace`). `draft` belongs to generate/revise,
-  `critique` to critique. That makes the data flow readable from the schema.
-- **Reducers only where several nodes write.** `trace` uses `operator.add`, so
-  every node's event is appended; everything else is plain overwrite.
-- **Separate input schema** (`input_schema=CritiqueInput`) so internal keys
-  aren't part of what callers have to send.
-- **Keep raw model output** next to the parsed value. When parsing fails you
-  still have the reply in the trace.
+## Step 4 — Execution trace handling
 
-## Step 2 — Node 1: generate
+You already have one layer, Arize, which records prompts, replies and timings per model call. Two more
+layers answer different questions:
 
-```python
-GENERATE_SYSTEM = ("You are a senior AI infrastructure engineer. Answer the question accurately "
-                   "and concretely in under 250 words. Prefer specifics over generalities.")
-
-def generate(state: CritiqueState) -> dict:
-    return {"draft": chat(GENERATE_SYSTEM, state["question"]), "revisions": 0}
-```
-
-A node returns **only the keys it changes**; LangGraph merges the update.
-`chat` is any `(system, user) -> str` function — a real model or a test double
-(Step 6). Injecting it keeps the graph testable.
-
-## Step 3 — Node 2: critique reads Node 1's output from state
-
-```python
-CRITIQUE_SYSTEM = ("You are a demanding technical reviewer. Evaluate the answer to the question. "
-                   'Return ONLY a JSON object: {"score": <1-10>, "gaps": [...], '
-                   '"failure_modes": [...], "verdict": "pass" or "revise"}. Use "revise" when score < 7.')
-
-def critique(state: CritiqueState) -> dict:
-    reply = chat(CRITIQUE_SYSTEM, f"Question:\n{state['question']}\n\nAnswer to review:\n{state['draft']}")
-    try:
-        return {"critique": parse_critique(reply), "critique_raw": reply, "critique_error": ""}
-    except (ValueError, TypeError) as exc:
-        return {"critique_raw": reply, "critique_error": f"unparseable critique: {exc}"}
-```
-
-- The handoff is `state['draft']` — the second call sees exactly what the
-  first produced; the test suite asserts this.
-- The review is **structured** (a rubric in JSON), so later steps can route on
-  it. `parse_critique` tolerates ```` ```json ```` fences and chatter, clamps the
-  score, and derives a verdict if the model omits it.
-- A parse failure is **recorded, not raised**: the run completes and the trace
-  shows why.
-
-## Step 4 — Wire the edges and compile
+| Layer | Answers | How |
+|---|---|---|
+| Arize spans (cell 28) | What did each model call see and return, and how long did it take? | already on |
+| `stream_mode="updates"` | What did each node write, as it happened? | yields `{node: its update}` |
+| Checkpointer + `thread_id` | What was the full state at every step, after the fact? | `get_state` / `get_state_history` |
 
 ```python
 from langgraph.checkpoint.memory import InMemorySaver
-from langgraph.graph import END, START, StateGraph
 
-builder = StateGraph(CritiqueState, input_schema=CritiqueInput)
-builder.add_node("generate", traced("generate", generate))
-builder.add_node("critique", traced("critique", critique))
-builder.add_edge(START, "generate")
-builder.add_edge("generate", "critique")
-builder.add_edge("critique", END)
-graph = builder.compile(checkpointer=InMemorySaver())
+traced_graph = builder.compile(checkpointer=InMemorySaver())     # cell 32's builder, now with memory
+config = {"configurable": {"thread_id": "fortune-run-1"}}
 
-print(graph.get_graph().draw_mermaid())    # render the structure you actually compiled
-```
-
-`compile()` validates the structure (unknown nodes, dangling edges) and
-returns a runnable. The checkpointer enables Step 5's state history.
-
-## Step 5 — Execution trace handling
-
-Three layers, from cheapest to richest:
-
-**a) Trace in state.** `traced(name, fn)` wraps each node, times it, and
-appends a `TraceEvent` via the `trace` reducer — so the final state carries its
-own execution record:
-
-```python
-def traced(name, fn):
-    def node(state):
-        start = time.perf_counter()
-        update = fn(state)
-        event = TraceEvent(node=name, ms=round((time.perf_counter() - start) * 1000, 1),
-                           out_chars=sum(len(v) for v in update.values() if isinstance(v, str)))
-        return {**update, "trace": [event]}
-    return node
-```
-
-**b) Live per-node updates.** `stream_mode="updates"` yields `{node: update}`
-as each node finishes:
-
-```python
-config = {"configurable": {"thread_id": "demo-1"}}
-for step, update in enumerate(graph.stream({"question": q}, config, stream_mode="updates"), 1):
+for step, update in enumerate(traced_graph.stream({"question": question}, config, stream_mode="updates"), 1):
     for node, delta in update.items():
-        print(f"[step {step}] {node} wrote: {', '.join(k for k in delta if k != 'trace')}")
-```
+        print(f"[step {step}] {node} wrote {list(delta)}: {str(delta)[:60]}")
 
-**c) Checkpoint history.** With a checkpointer every super-step is saved
-under the `thread_id`:
-
-```python
-final = graph.get_state(config).values                 # latest snapshot
-history = list(graph.get_state_history(config))        # newest first
+history = list(traced_graph.get_state_history(config))           # newest first
 for snap in reversed(history):
-    print(snap.metadata.get("step"), snap.next, list(snap.values))
+    print(snap.metadata["step"], "next:", snap.next, "keys:", list(snap.values))
+
+before_joke = next(s for s in history if s.next == ("generate_joke",))
+print("generate_joke read fortune =", str(before_joke.values["fortune"])[:40])
 ```
 
-That is how you replay or debug a run after the fact. `run_with_trace()` in
-the lab does b + c. Actual offline output (with the Step 7 loop on):
+Output from the companion's offline run:
 
 ```
-[step 1] generate  wrote: draft, revisions  (0.0 ms)
-[step 2] critique  wrote: critique, critique_raw, critique_error  (0.1 ms)
-[step 3] revise    wrote: draft, revisions  (0.0 ms)
-[step 4] critique  wrote: critique, critique_raw, critique_error  (0.0 ms)
-thread 70456376: 6 checkpoints
+[step 1] generate_fortune wrote ['fortune']: {'fortune': 'FORTUNE-FOR-TRACE'}
+[step 2] generate_joke wrote ['joke']: {'joke': 'JOKE-FOR-TRACE'}
+-1 next: ('__start__',) keys: []
+0 next: ('generate_fortune',) keys: ['question']
+1 next: ('generate_joke',) keys: ['question', 'fortune']
+2 next: () keys: ['question', 'fortune', 'joke']
+generate_joke read fortune = FORTUNE-FOR-TRACE
 ```
 
-**d) Optional: hosted tracing.** Set `LANGSMITH_TRACING=true` and
-`LANGSMITH_API_KEY` to get every LLM call, prompt and latency in LangSmith —
-no code changes.
+**The `thread_id` doubles as the Arize session.** OpenInference copies it into every span of the run as
+`session.id`: the graph root, each node, and the prompt and model child spans. Runs without a config (your
+cells 36, 46, 48 and 50) have `session.id = None`. Use one `thread_id` per logical run, and Arize's
+Sessions view will line up with `get_state_history`. More in [LLM tracing](../concepts/llm-tracing.md).
 
-## Step 6 — Test it offline with a scripted model
+## Step 5 — Bounded reflection loop
+
+This combines your two skills, sequential edges (cell 32) and a conditional edge (cell 42), into
+generate → critique → (revise → critique)* → end.
 
 ```python
-class ScriptedChat:
-    def __init__(self, replies): self.replies, self.calls = list(replies), []
-    def __call__(self, system, user):
-        self.calls.append((system, user))
-        return self.replies.pop(0)
+MAX_REVISIONS = 2
+LOOP_LIMITS = {"recursion_limit": 12}   # pass on every call: LangGraph's default is 10,007
 
-chat = ScriptedChat(["DRAFT-123", '{"score": 8, "gaps": [], "failure_modes": [], "verdict": "pass"}'])
-out = build_generate_critique(chat).invoke({"question": "q?"})
-assert "DRAFT-123" in chat.calls[1][1]      # node 2 really read node 1's output
-```
+class ReflectState(CritiqueState, total=False):
+    revisions: int
 
-The suite covers: state handoff, fenced-JSON parsing, unparseable critique
-(recorded, no revision), the reflection loop and its budget, routing for all
-classify outcomes, and stream + history. Run:
-`cd labs/langgraph-two-call && python -m unittest test_two_call -v`.
+revise_prompt = ChatPromptTemplate([
+    ("system", fortune_prompt.messages[0].prompt.template),        # same persona as cell 7
+    ("human", "Question: {question}\nYour last fortune: {fortune}\n"
+              "Editor's note: {fix}\nRewrite the fortune to address the note."),
+])
 
-## Step 7 — Loop on the critique (reflection)
+def revise_fortune(state: ReflectState) -> dict:
+    prompt = revise_prompt.invoke({"question": state["question"], "fortune": state["fortune"],
+                                   "fix": state["critique"]["fix"]})
+    return {"fortune": str(model.invoke(prompt).text), "revisions": state.get("revisions", 0) + 1}
 
-Turn the critique into a decision with a **conditional edge** and a bounded
-budget:
+def start_fortune(state: ReflectState) -> dict:
+    # cell 30's node + a reset of the per-run fields (a checkpointer keeps them per thread_id)
+    return {**generate_fortune(state), "revisions": 0, "critique": None, "critique_error": ""}
 
-```python
-def after_critique(state) -> Literal["revise", "__end__"]:
-    if state.get("critique_error"):
-        return END                                   # can't act on a review we couldn't read
-    if state["critique"]["verdict"] == "revise" and state.get("revisions", 0) < max_revisions:
-        return "revise"
+def after_critique(state: ReflectState) -> Literal["revise_fortune", "__end__"]:
+    c = state.get("critique")
+    if state.get("critique_error") or c is None:
+        return END                                     # can't act on a review we couldn't read
+    if (c["verdict"] == "revise" or c["score"] < 7) and state.get("revisions", 0) < MAX_REVISIONS:
+        return "revise_fortune"
     return END
 
-builder.add_node("revise", traced("revise", revise))
-builder.add_conditional_edges("critique", after_critique, ["revise", END])
-builder.add_edge("revise", "critique")
+reflect_builder = StateGraph(ReflectState)
+reflect_builder.add_node("generate_fortune", start_fortune)
+reflect_builder.add_node("critique_fortune", critique_fortune)
+reflect_builder.add_node("revise_fortune", revise_fortune)
+reflect_builder.add_edge(START, "generate_fortune")
+reflect_builder.add_edge("generate_fortune", "critique_fortune")
+reflect_builder.add_conditional_edges("critique_fortune", after_critique)   # targets read from the Literal
+reflect_builder.add_edge("revise_fortune", "critique_fortune")              # the loop back
+reflect_graph = reflect_builder.compile(checkpointer=InMemorySaver())
+
+reflect_graph.invoke({"question": question}, {"configurable": {"thread_id": "reflect-1"}, **LOOP_LIMITS})
 ```
 
 ```mermaid
 flowchart LR
-  S((START)) --> G[generate] --> C[critique]
-  C -. verdict = revise<br/>and budget left .-> R[revise] --> C
-  C -. pass / budget spent / unparseable .-> E((END))
+  S((START)) --> G[generate_fortune] --> C[critique_fortune]
+  C -. revise and budget left .-> R[revise_fortune] --> C
+  C -. pass / budget spent / unreadable .-> E((END))
 ```
 
-`build_generate_critique(chat, max_revisions=N)`; `N = 0` keeps the pure
-two-call graph. Always bound loops — an LLM critic can ask for revisions forever.
+- **Three bounds.** `MAX_REVISIONS = 2` caps a run at **6 model calls** (1 generate, 3 critiques,
+  2 revisions). The router also stops on an unreadable critique. And `recursion_limit` is the backstop.
+  LangGraph's default limit is 10,007 steps, so pass it on **every** call. In testing, a loop with a
+  broken budget and no limit kept calling the model until the test's 402 scripted replies ran out.
+- **The router trusts the score as well as the verdict,** so an inconsistent "pass with score 3" still
+  gets revised.
+- **Reset per run.** Without `start_fortune`'s reset, a reused `thread_id` would carry `revisions` (no budget
+  left) and the old `critique` over into the next run.
+- **No path map here.** `add_conditional_edges` reads the targets from the router's `Literal` return
+  annotation, so those values must be node names (or `"__end__"`).
 
-## Step 8 — Variants
+Companion checks: passes after 1 revision in 4 calls; never passes and stops at the budget after 6 calls; a
+garbled critique stops after 2 calls; a reused thread gets a fresh budget.
 
-### Variant B — Classify, then respond (with a conditional edge)
+## Step 6 — Make cell 50 actually concurrent
 
-Built in the lab as `build_classify_respond(chat)`. Node 1 returns
-`{"topic", "sentiment", "urgency"}` JSON; a router sends `urgency == "high"` to
-an `escalate` node (incident-commander reply) and everything else to `respond`,
-whose system prompt is assembled from the classification (topic, plus tone by
-sentiment). Still two LLM calls per run. If classification can't be parsed it
-**fails safe** to `urgency: high`, so a human sees it — the right default for
-the [AIOps agent](../projects/03-devops-aiops-platform.md).
-
-```mermaid
-flowchart LR
-  S((START)) --> K[classify]
-  K -. urgency = high .-> X[escalate] --> E((END))
-  K -. otherwise .-> R[respond] --> E
-```
-
-### Variant C — Explain, then summarize
+`await a` followed by `await b` runs the second graph only after the first finishes, so cell 50 takes as
+long as cells 46 and 48 combined. `asyncio.gather` overlaps the two and keeps the `ainvoke` you're learning:
 
 ```python
-class ExplainState(TypedDict, total=False):
-    concept: str
-    explanation: str
-    eli5: str
+import asyncio
 
-def build_explain_summarize(chat):
-    def explain(state: ExplainState) -> dict:
-        return {"explanation": chat("Explain this concept rigorously for an engineer, under 200 words.",
-                                    state["concept"])}
-
-    def summarize(state: ExplainState) -> dict:
-        return {"eli5": chat("Re-explain this for a five-year-old: 3 short sentences, one everyday analogy.",
-                             state["explanation"])}
-
-    builder = StateGraph(ExplainState)
-    builder.add_node("explain", explain)
-    builder.add_node("summarize", summarize)
-    builder.add_edge(START, "explain")
-    builder.add_edge("explain", "summarize")
-    builder.add_edge("summarize", END)
-    return builder.compile()
+inputs = [{"sentence": "I got the job! I'm so excited!"},
+          {"sentence": "I failed my exam and feel terrible."}]
+results = await asyncio.gather(*(sentiment_graph.ainvoke(x) for x in inputs), return_exceptions=True)
+for x, r in zip(inputs, results):
+    print(x["sentence"][:32], "->", r if isinstance(r, Exception) else (r["sentiment"], r["message"]))
 ```
 
-### Variant D — Question, then answer
+- `return_exceptions=True` keeps one bad input from losing the other's result. `await sentiment_graph.abatch(inputs)`
+  is equivalent and returns results in input order.
+- If the graph has a checkpointer, give **each input its own `thread_id`**. With one shared config the two
+  runs interleave in a single thread's history.
+- Your `def` nodes run in a thread pool under `ainvoke`, capped at `min(32, cpu_count + 4)`. That's fine
+  here. `async def` nodes would lift the cap, but they break the plain `invoke()` in cells 46/48 unless you
+  switch those cells to `await ... ainvoke(...)`.
+
+## Step 7 — Point it at a sovereign model
+
+Change only how `model` is created, and every node, test and graph above stays the same. That makes this
+notebook a ready-made A/B harness for [project 06](../projects/06-sovereign-ai-engine.md):
 
 ```python
-class QAState(TypedDict, total=False):
-    domain: str
-    question: str
-    answer: dict          # {"summary": str, "steps": [str], "pitfalls": [str]}
-
-def build_question_answer(chat):
-    def ask(state: QAState) -> dict:
-        return {"question": chat("Write one rigorous, specific interview-grade question about this domain. "
-                                 "Output only the question.", state["domain"])}
-
-    def answer(state: QAState) -> dict:
-        reply = chat('Answer as JSON: {"summary": str, "steps": [str], "pitfalls": [str]}. Output only JSON.',
-                     state["question"])
-        return {"answer": parse_json_object(reply)}
-
-    builder = StateGraph(QAState)
-    builder.add_node("ask", ask)
-    builder.add_node("answer", answer)
-    builder.add_edge(START, "ask")
-    builder.add_edge("ask", "answer")
-    builder.add_edge("answer", END)
-    return builder.compile()
+model = init_chat_model("<served-model-name>", model_provider="openai",
+                        base_url="http://localhost:8000/v1", api_key="EMPTY", max_tokens=4000)
 ```
 
-Both were checked with `ScriptedChat` on 2026-10-18 (node 2 receives node 1's
-output; structured answer parses).
+**Structured output takes a different path here.** `ChatOpenAI` defaults to `method="json_schema"` (a
+`response_format`), while ChatOpenRouter uses a forced tool call. Either confirm the server supports
+JSON-schema structured outputs (vLLM does), or bind with
+`model.with_structured_output(FortuneCritique, method="function_calling", include_raw=True)` and enable tool
+calling on the server. The offline fake only exercises the tool-call path, so make **one real structured
+call** against the local server before trusting a comparison. For small local models without either
+capability, a text-parse fallback still helps; see the reference implementation below.
 
-## Step 9 — Point it at a sovereign model
+Run the same question set against the frontier and local models, and compare critique scores, P95 latency
+in Arize, and cost. Treat critique scores as a rough signal until the judge is calibrated
+([LLM evaluation](../concepts/llm-evaluation.md)).
 
-The same graph runs against a frontier API or your own vLLM server — making it
-a ready-made A/B harness for [project 06](../projects/06-sovereign-ai-engine.md):
+## Reference implementation
 
-```bash
-pip install -r labs/langgraph-two-call/requirements.txt langchain-openai
-# frontier baseline
-python labs/langgraph-two-call/two_call.py generate-critique "How should I size --max-num-seqs?" \
-    --model "<provider>:<model-name>"
-# local open-weight model served by vLLM (project 02)
-python labs/langgraph-two-call/two_call.py generate-critique "How should I size --max-num-seqs?" \
-    --model "openai:<served-model-name>" --base-url http://localhost:8000/v1
-```
-
-Run the same question set through both; compare drafts, critique scores and
-the per-node latency in the trace. Treat critique scores as a rough signal
-only — calibrate before trusting them ([LLM evaluation](../concepts/llm-evaluation.md)).
-
-## Next extensions (in order of payoff)
-
-1. **Native structured output:** `llm.with_structured_output(Critique)` instead
-   of JSON parsing, where the provider supports it.
-2. **Retry on parse failure:** raise in the node and attach
-   `retry_policy=RetryPolicy(max_attempts=2)` instead of recording the error.
-3. **Human-in-the-loop:** `interrupt()` before `revise` to approve the critique;
-   resume with `Command(resume=...)`.
-4. **Runtime context:** pass the model via `context_schema` rather than a closure.
-5. **Durable threads:** swap `InMemorySaver` for a SQLite/Postgres saver.
-6. **Parallel critics:** fan out to several reviewer nodes (correctness,
-   security, cost) and merge their critiques with a reducer.
+[`labs/langgraph-two-call/two_call.py`](../../labs/langgraph-two-call/two_call.py) packages the same two
+patterns as a module, with 9 offline tests and a CLI. It has a provider-agnostic `chat(system, user)` seam
+and asks for JSON with a tolerant parser instead of tool calls, which is the fallback for Step 7's small
+models. To drive it with your model:
+`chat = lambda s, u: str(model.invoke([("system", s), ("user", u)]).text)`. It's useful once graphs outgrow
+the notebook; it isn't the learning path.
 
 ## Done when
 
-- [ ] Your notebook builds both graphs from your own State definitions.
-- [ ] `draw_mermaid()` output matches the diagrams above.
-- [ ] A traced run prints per-node updates and you can read a past step from `get_state_history`.
-- [ ] Offline tests pass; one real-model run captured in `raw/story-updates/`.
-- [ ] Same question set run against a frontier API and a local model (feeds [06](../projects/06-sovereign-ai-engine.md)).
+- [ ] Steps 1–5 are pasted into your notebook (after cell 50), and the offline checks pass.
+- [ ] One real run of Step 3 and Step 5, inspected in Arize under its `thread_id` session.
+- [ ] Cell 50 replaced with Step 6; real timings recorded in a `raw/story-updates/` note.
+- [ ] Step 7 run against a local model on [project 02](../projects/02-k8s-vllm-serving.md), with one real
+      structured call confirmed.
 
 ## Sources
 
-- [AI infra project roadmap (2026-10-18)](../../raw/roadmaps/2026-10-18-ai-infra-project-roadmap.md) — learning track, four canonical patterns, deliverables.
-- Code verified against `langgraph` 1.2 / `langchain-core` 1.6 in this repo's lab.
+- [AI infra project roadmap (2026-10-18)](../../raw/roadmaps/2026-10-18-ai-infra-project-roadmap.md): learning track, the four canonical patterns, deliverables.
+- [`problem_first_ai/LangChain_LangGraph_Demo.ipynb`](../../problem_first_ai/LangChain_LangGraph_Demo.ipynb): the baseline every step builds on (cell numbers above).
+- Verified 2026-10-18 against langgraph 1.2.16 / langchain-core 1.6.12 / langchain-openrouter 0.2.9 by
+  independent reproduction, and by executing the companion notebook.

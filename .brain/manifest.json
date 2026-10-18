@@ -1,5 +1,9 @@
 {
   "sources": {
+    "problem_first_ai/LangChain_LangGraph_Demo.ipynb": {
+      "sha256": "afc79211656a1f05b5f2d8127a4c64e457059c0ef31b675ec5315ebe6982b2b4",
+      "ingested": "2026-10-18"
+    },
     "raw/roadmaps/2026-10-18-ai-infra-project-roadmap.md": {
       "sha256": "a6f9d4bf1df1ce6d5ca82f09bf105b40ccef62d60065718da6656f473024d57c",
       "ingested": "2026-10-18"

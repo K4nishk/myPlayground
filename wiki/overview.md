@@ -3,7 +3,7 @@ title: Overview — AI Infrastructure & Sovereign AI Roadmap
 type: overview
 status: draft
 tags: [roadmap, overview]
-sources: [raw/roadmaps/2026-10-18-ai-infra-project-roadmap.md, raw/roadmaps/2026-10-18-sovereign-ai-engine-blueprint.md]
+sources: [raw/roadmaps/2026-10-18-ai-infra-project-roadmap.md, raw/roadmaps/2026-10-18-sovereign-ai-engine-blueprint.md, problem_first_ai/LangChain_LangGraph_Demo.ipynb]
 updated: 2026-10-18
 ---
 
@@ -56,20 +56,27 @@ why every measurement goes into a dated `raw/story-updates/` note.
 | [Quantization](concepts/quantization.md) | | ○ | | | ○ | ● |
 | [LLM evaluation](concepts/llm-evaluation.md) | ● | ● | ○ | | | ● |
 | [LangGraph state graphs](concepts/langgraph-state-graphs.md) | ● | | ● | | | ○ |
+| [LLM tracing](concepts/llm-tracing.md) | | ○ | ● | | | ○ |
 
 ● central · ○ touches
 
 ## Learning track
 
-[LangGraph two-call extension plan](notebooks/langgraph-two-call-extension.md):
-generate → critique (with a bounded reflection loop) and classify → respond
-(with a conditional edge), runnable in `labs/langgraph-two-call/`.
+Your Problem-First AI course notebook
+([review](notebooks/langchain-langgraph-demo.md)) already covers state, nodes, edges,
+conditional routing, async and Arize tracing, and implements classify → respond. The
+[extension plan](notebooks/langgraph-two-call-extension.md) builds on those exact cells:
+a hardened router, generate → critique with a structured rubric, trace handling,
+a bounded reflection loop, concurrency, and a sovereign-model A/B. It ships as an
+offline-runnable companion notebook in `labs/langgraph-two-call/`.
 
 ## Where things stand (2026-10-18)
 
 All six projects are **draft** — compiled from plans, no measurements yet.
 Stories for each are seeded in the [story bank](../story-bank/index.md) with
-`TBD` results. The first evidence to collect: the project 02 knee.
+`TBD` results. The first evidence to collect: the project 02 knee. On the learning
+track, fix the notebook's housekeeping first: rotate the leaked key prefixes, then use the
+`.venv` kernel ([review](notebooks/langchain-langgraph-demo.md#fix-first-in-this-order)).
 
 ## Sources
 

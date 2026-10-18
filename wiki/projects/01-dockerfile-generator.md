@@ -40,7 +40,7 @@ flowchart LR
 
 This is the *generate → critique* graph from the notebook track with the
 critique node swapped for real tools — see
-[step 7 of the extension plan](../notebooks/langgraph-two-call-extension.md#step-7--loop-on-the-critique-reflection).
+[step 5 of the extension plan](../notebooks/langgraph-two-call-extension.md#step-5--bounded-reflection-loop).
 
 ## Design decisions (Proposed)
 

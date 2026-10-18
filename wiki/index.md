@@ -32,13 +32,15 @@ Narratives: [story bank](../story-bank/index.md).
 | [PEFT (LoRA / QLoRA)](concepts/parameter-efficient-finetuning.md) | LoRA math and knobs, QLoRA, merge vs multi-LoRA serving, running sweeps well | draft | 2026-10-18 |
 | [Quantization](concepts/quantization.md) | Memory arithmetic, FP8/INT8/GPTQ/AWQ/GGUF/NF4, evaluating the precision trade-off | draft | 2026-10-18 |
 | [LLM evaluation](concepts/llm-evaluation.md) | Quality (rubrics, LLM-judge biases), TTFT/TPOT/E2E percentiles, goodput, cost | draft | 2026-10-18 |
-| [LangGraph state graphs](concepts/langgraph-state-graphs.md) | State, reducers, nodes, edges, checkpointers, streaming modes, interrupts (LangGraph 1.x) | draft | 2026-10-18 |
+| [LangGraph state graphs](concepts/langgraph-state-graphs.md) | State, reducers, nodes, edges, checkpointers, streaming modes, interrupts, plus 10 verified gotchas (LangGraph 1.2) | draft | 2026-10-18 |
+| [LLM tracing](concepts/llm-tracing.md) | OpenTelemetry + OpenInference + Arize: span tree of a graph run, thread_id → session, flush and re-run gotchas | draft | 2026-10-18 |
 
 ## Notebooks
 
 | Page | Summary | Status | Updated |
 |---|---|---|---|
-| [LangGraph two-call extension](notebooks/langgraph-two-call-extension.md) | Step-by-step plan + tested code: generate→critique, reflection loop, classify→respond, trace handling | active | 2026-10-18 |
+| [Notebook review: LangChain & LangGraph Demo](notebooks/langchain-langgraph-demo.md) | Your Problem-First AI notebook: what it covers, the fixes to make first (key prefixes in a public repo, wrong kernel, fragile router), smaller issues | active | 2026-10-18 |
+| [LangGraph two-call extension](notebooks/langgraph-two-call-extension.md) | 7 steps built on your notebook's cells: offline harness, hardened router, generate→critique, trace handling, bounded loop, concurrency, sovereign A/B; companion notebook runs offline | active | 2026-10-18 |
 
 ## Synthesis
 
