@@ -1,3 +1,4 @@
 # Sources tracked in place, outside raw/ (globs relative to the repo root).
 # Hidden and _-prefixed folders (.venv, .ipynb_checkpoints) are always skipped.
 problem_first_ai/*.ipynb
+problem_first_ai/preread/*.ipynb

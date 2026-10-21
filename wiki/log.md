@@ -35,3 +35,10 @@ Recent activity: `grep "^## \[" wiki/log.md | tail -5`.
 ## [2026-10-18] lint | Proofread of the notebook pages (completes the review cut off by the session limit)
 - fixed: RetryPolicy backoff timing (extension plan, state-graph gotchas, companion), OpenRouter retry wording, cell-3 status + history-rewrite limits (notebook review)
 - all other claims checked against the verified findings; no further changes
+
+## [2026-10-20] heal | Notebook moved to preread/, course folders ignored
+- cause: problem_first_ai/LangChain_LangGraph_Demo.ipynb and requirements.txt moved, byte-identical, into problem_first_ai/preread/ (10 lint errors)
+- repointed sources: and links: overview, concepts/langgraph-state-graphs, concepts/llm-tracing, notebooks/langchain-langgraph-demo, notebooks/langgraph-two-call-extension
+- notebooks/langchain-langgraph-demo: location note and venv setup now use preread/requirements.txt (no longer committed)
+- .gitignore: problem_first_ai/preread/ and problem_first_ai/Assignment 1/ (course material, never published); .brain/watch.txt: + problem_first_ai/preread/*.ipynb
+- manifest: new path recorded, REMOVED entry pruned; cell sources match commit 46c74cf (cell-3 fix, already in the review's status note)

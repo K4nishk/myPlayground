@@ -3,7 +3,7 @@ title: Overview — AI Infrastructure & Sovereign AI Roadmap
 type: overview
 status: draft
 tags: [roadmap, overview]
-sources: [raw/roadmaps/2026-10-18-ai-infra-project-roadmap.md, raw/roadmaps/2026-10-18-sovereign-ai-engine-blueprint.md, problem_first_ai/LangChain_LangGraph_Demo.ipynb]
+sources: [raw/roadmaps/2026-10-18-ai-infra-project-roadmap.md, raw/roadmaps/2026-10-18-sovereign-ai-engine-blueprint.md, problem_first_ai/preread/LangChain_LangGraph_Demo.ipynb]
 updated: 2026-10-18
 ---
 

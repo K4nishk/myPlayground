@@ -39,7 +39,7 @@ Narratives: [story bank](../story-bank/index.md).
 
 | Page | Summary | Status | Updated |
 |---|---|---|---|
-| [Notebook review: LangChain & LangGraph Demo](notebooks/langchain-langgraph-demo.md) | Your Problem-First AI notebook: what it covers, the fixes to make first (key prefixes in a public repo, wrong kernel, fragile router), smaller issues | active | 2026-10-18 |
+| [Notebook review: LangChain & LangGraph Demo](notebooks/langchain-langgraph-demo.md) | Your Problem-First AI notebook: what it covers, the fixes to make first (key prefixes in a public repo, wrong kernel, fragile router), smaller issues | active | 2026-10-20 |
 | [LangGraph two-call extension](notebooks/langgraph-two-call-extension.md) | 7 steps built on your notebook's cells: offline harness, hardened router, generate→critique, trace handling, bounded loop, concurrency, sovereign A/B; companion notebook runs offline | active | 2026-10-18 |
 
 ## Synthesis

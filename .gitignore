@@ -219,3 +219,7 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Course material — never publish
+problem_first_ai/preread/
+problem_first_ai/Assignment 1/

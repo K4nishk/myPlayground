@@ -3,7 +3,7 @@ title: LLM Tracing (OpenTelemetry · OpenInference · Arize)
 type: concept
 status: draft
 tags: [observability, tracing, opentelemetry, openinference, arize, langgraph]
-sources: [problem_first_ai/LangChain_LangGraph_Demo.ipynb]
+sources: [problem_first_ai/preread/LangChain_LangGraph_Demo.ipynb]
 related: [concepts/langgraph-state-graphs.md, concepts/llm-evaluation.md, notebooks/langgraph-two-call-extension.md, projects/03-devops-aiops-platform.md]
 updated: 2026-10-18
 ---
@@ -74,5 +74,5 @@ wires all three together.
 
 ## Sources
 
-- [`problem_first_ai/LangChain_LangGraph_Demo.ipynb`](../../problem_first_ai/LangChain_LangGraph_Demo.ipynb), cells 28, 36, 46–52 (saved outputs).
+- [`problem_first_ai/preread/LangChain_LangGraph_Demo.ipynb`](../../problem_first_ai/preread/LangChain_LangGraph_Demo.ipynb), cells 28, 36, 46–52 (saved outputs).
 - Behaviour reproduced 2026-10-18 with openinference-instrumentation-langchain 0.1.79 and the OpenTelemetry SDK, using a fake model.

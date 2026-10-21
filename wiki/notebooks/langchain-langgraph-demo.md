@@ -3,16 +3,17 @@ title: Notebook Review — LangChain & LangGraph Demo (Problem-First AI)
 type: notebook
 status: active
 tags: [langgraph, langchain, notebook, openrouter, arize, security, environment]
-sources: [problem_first_ai/LangChain_LangGraph_Demo.ipynb]
+sources: [problem_first_ai/preread/LangChain_LangGraph_Demo.ipynb]
 related: [notebooks/langgraph-two-call-extension.md, concepts/langgraph-state-graphs.md, concepts/llm-tracing.md]
-updated: 2026-10-18
+updated: 2026-10-20
 ---
 
 # Notebook Review: LangChain & LangGraph Demo
 
-**Source:** [`problem_first_ai/LangChain_LangGraph_Demo.ipynb`](../../problem_first_ai/LangChain_LangGraph_Demo.ipynb).
+**Source:** [`problem_first_ai/preread/LangChain_LangGraph_Demo.ipynb`](../../problem_first_ai/preread/LangChain_LangGraph_Demo.ipynb).
 This is your Problem-First AI course notebook: 53 cells (27 code, 26 markdown), pushed to `sandbox` on
-2026-10-18. It is tracked in place through `.brain/watch.txt`, next to its `.venv`.
+2026-10-18. It is tracked in place through `.brain/watch.txt`. On 2026-10-20 it moved into `preread/`,
+which is course material and gitignored. Its `.venv` stays one level up in `problem_first_ai/`.
 
 **How it was reviewed.** Four independent analyses (graph robustness, environment and tracing, gaps
 against the plan, security). Each one ran your actual cells in a venv with the model faked. A separate
@@ -71,10 +72,10 @@ prefix gets written into the notebook.
 2. **Rotate the OpenRouter and Arize API keys.** Create new ones, put them in `.env`, restart the kernel,
    then revoke the old ones. The space ID is an identifier and doesn't need rotating.
 3. **Strip saved outputs.** To keep only the three graph diagrams:
-   `nbstripout --keep-output-type display_data -- problem_first_ai/LangChain_LangGraph_Demo.ipynb`.
+   `nbstripout --keep-output-type display_data -- problem_first_ai/preread/LangChain_LangGraph_Demo.ipynb`.
    The `--` matters: without it nbstripout reads the filename as an output type and waits silently on
    stdin. To drop all outputs instead:
-   `jupyter nbconvert --clear-output --inplace problem_first_ai/LangChain_LangGraph_Demo.ipynb`.
+   `jupyter nbconvert --clear-output --inplace problem_first_ai/preread/LangChain_LangGraph_Demo.ipynb`.
 4. **Stop it happening again.** From the repo root, with the venv active: `pip install nbstripout`, then
    `nbstripout --install --attributes .gitattributes`, then `git add --renormalize .`. Without the renormalize,
    outputs already committed stay in HEAD. The filter lives in `.git/config`, so run `--install` once in
@@ -98,7 +99,7 @@ for the "Python (problem_first_ai)" kernel, but the saved kernelspec is the defa
 cd problem_first_ai
 python3 -m venv .venv                 # only if it doesn't exist yet
 source .venv/bin/activate
-pip install -r requirements.txt       # verified file, committed next to the notebook
+pip install -r preread/requirements.txt   # verified file, next to the notebook (gitignored)
 python -m ipykernel install --user --name problem_first_ai --display-name "Python (problem_first_ai)"
 ```
 
@@ -146,7 +147,7 @@ The fix is [Step 2 of the plan](langgraph-two-call-extension.md#step-2--harden-t
 
 ## Sources
 
-- [`problem_first_ai/LangChain_LangGraph_Demo.ipynb`](../../problem_first_ai/LangChain_LangGraph_Demo.ipynb)
+- [`problem_first_ai/preread/LangChain_LangGraph_Demo.ipynb`](../../problem_first_ai/preread/LangChain_LangGraph_Demo.ipynb)
   (commit `b5db05f`): cell sources and saved outputs. Credential values were never read into this page.
 - The fixes are encoded as runnable checks in
   [`labs/langgraph-two-call/fortune_extension.ipynb`](../../labs/langgraph-two-call/fortune_extension.ipynb).

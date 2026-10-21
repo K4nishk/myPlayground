@@ -3,7 +3,7 @@ title: LangGraph State Graphs
 type: concept
 status: draft
 tags: [langgraph, agents, orchestration, python]
-sources: [raw/roadmaps/2026-10-18-ai-infra-project-roadmap.md, problem_first_ai/LangChain_LangGraph_Demo.ipynb]
+sources: [raw/roadmaps/2026-10-18-ai-infra-project-roadmap.md, problem_first_ai/preread/LangChain_LangGraph_Demo.ipynb]
 related: [notebooks/langgraph-two-call-extension.md, notebooks/langchain-langgraph-demo.md, concepts/llm-tracing.md, projects/01-dockerfile-generator.md, projects/03-devops-aiops-platform.md]
 updated: 2026-10-18
 ---

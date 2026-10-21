@@ -3,7 +3,7 @@ title: LangGraph Two-Call Workflow — Extension Plan
 type: notebook
 status: active
 tags: [langgraph, agents, notebook, learning, evaluation, tracing]
-sources: [raw/roadmaps/2026-10-18-ai-infra-project-roadmap.md, problem_first_ai/LangChain_LangGraph_Demo.ipynb]
+sources: [raw/roadmaps/2026-10-18-ai-infra-project-roadmap.md, problem_first_ai/preread/LangChain_LangGraph_Demo.ipynb]
 related: [notebooks/langchain-langgraph-demo.md, concepts/langgraph-state-graphs.md, concepts/llm-tracing.md, concepts/llm-evaluation.md, projects/01-dockerfile-generator.md, projects/03-devops-aiops-platform.md, projects/06-sovereign-ai-engine.md]
 updated: 2026-10-18
 ---
@@ -15,7 +15,7 @@ to a **robust two-call workflow** with explicit State, Nodes and Edges, and docu
 graph compilation, and execution-trace handling.
 
 **Re-targeted on 2026-10-18 to your actual notebook,**
-[`LangChain_LangGraph_Demo.ipynb`](../../problem_first_ai/LangChain_LangGraph_Demo.ipynb)
+[`LangChain_LangGraph_Demo.ipynb`](../../problem_first_ai/preread/LangChain_LangGraph_Demo.ipynb)
 (review: [notebook review](langchain-langgraph-demo.md)). The first version of this plan assumed a
 messages-only quickstart. Your notebook is well past that, so every step below builds on objects you
 already have: `model`, `fortune_prompt`, `generate_fortune`, cell 32's `builder`, and the sentiment graph.
@@ -401,6 +401,6 @@ the notebook; it isn't the learning path.
 ## Sources
 
 - [AI infra project roadmap (2026-10-18)](../../raw/roadmaps/2026-10-18-ai-infra-project-roadmap.md): learning track, the four canonical patterns, deliverables.
-- [`problem_first_ai/LangChain_LangGraph_Demo.ipynb`](../../problem_first_ai/LangChain_LangGraph_Demo.ipynb): the baseline every step builds on (cell numbers above).
+- [`problem_first_ai/preread/LangChain_LangGraph_Demo.ipynb`](../../problem_first_ai/preread/LangChain_LangGraph_Demo.ipynb): the baseline every step builds on (cell numbers above).
 - Verified 2026-10-18 against langgraph 1.2.16 / langchain-core 1.6.12 / langchain-openrouter 0.2.9 by
   independent reproduction, and by executing the companion notebook.
