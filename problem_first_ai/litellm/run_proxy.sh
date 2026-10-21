@@ -32,8 +32,9 @@ if [ -z "${OPENROUTER_API_KEY:-}" ] && [ -f "$env_file" ]; then
     "$env_file")"
   export OPENROUTER_API_KEY
 fi
+key_warning=""
 if [ -z "${OPENROUTER_API_KEY:-}" ]; then
-  echo "OPENROUTER_API_KEY is neither exported nor in $env_file, so frontier aliases will fail." >&2
+  key_warning="WARNING: OPENROUTER_API_KEY is neither exported nor in $env_file, so frontier aliases will fail."
 fi
 
 if (exec 3<>/dev/tcp/127.0.0.1/4000) 2>/dev/null; then
@@ -43,5 +44,8 @@ fi
 
 mkdir -p logs
 echo "Starting LiteLLM gateway on http://127.0.0.1:4000 (config: litellm_config.yaml)"
-uv run --frozen litellm --config litellm_config.yaml --host 127.0.0.1 --port 4000 2>&1 \
-  | tee logs/proxy.log
+# The key warning goes through tee with the gateway's output, so it lands in logs/proxy.log too.
+{
+  if [ -n "$key_warning" ]; then echo "$key_warning"; fi
+  uv run --frozen litellm --config litellm_config.yaml --host 127.0.0.1 --port 4000
+} 2>&1 | tee logs/proxy.log

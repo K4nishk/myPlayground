@@ -20,8 +20,9 @@ The code lives in `problem_first_ai/litellm/validator/`.
 
    Give the command a 10-minute timeout: each local alias's model is loaded fresh and every case
    waits for a full answer, thinking included. Each run also makes paid calls to the frontier
-   alias, so run it when asked or after a change, never in a loop. Done when the command exits: code 0 with a JSON report
-   means every case passed, code 1 with a JSON report means something failed. A `config error:`
+   alias, so run it when asked or after a change, never in a loop. Done when the command exits:
+   code 0 with a JSON report means every case passed, code 1 with a JSON report means something
+   failed. A `config error:`
    line on stderr and no JSON means `litellm_config.yaml` or `validator/cases.yaml` is broken;
    report that line and stop.
 
@@ -63,7 +64,7 @@ so and ask the developer to run it.
 | `empty_answer` | The model finished with no answer, often all thinking | `ollama show <model>` for its template and capabilities |
 | `check_failed` | The answer is wrong | Quote `answer_preview`; runs are at temperature 0, so a re-run repeats it |
 | `error` | The call raised an exception | The detail, then the end of `logs/proxy.log` |
-| `error` on a frontier alias | OpenRouter refused the call; the detail carries its HTTP status. 401: the gateway has no valid key. 402: the key's credit limit or the account balance ran out. 429: rate limited | For 401, the start of `logs/proxy.log`: `run_proxy.sh` warns there when it found no `OPENROUTER_API_KEY`. Never read, print or copy any `.env` file; checking the key itself and its credits on openrouter.ai is the developer's job |
+| `error` on a frontier alias | The detail carries the HTTP status. 400 `UnsupportedParamsError`: the gateway refused a parameter the model doesn't accept (the config has no `drop_params`, on purpose). 401: OpenRouter refused the key: missing, revoked, or with an expiry longer than the account allows. 402: the key's credit limit or the account balance ran out. 429 from OpenRouter: rate limited. A 429 saying "No deployments available… cooldown" is LiteLLM pausing the alias after an earlier failure, which `disable_cooldowns` in the config should prevent: find that first failure | Quote the detail's message. For 401, the first line of `logs/proxy.log`: `run_proxy.sh` writes a warning there when it found no `OPENROUTER_API_KEY`. Never read, print or copy any `.env` file; checking the key and its credits on openrouter.ai is the developer's job |
 
 Warnings never fail a run:
 
