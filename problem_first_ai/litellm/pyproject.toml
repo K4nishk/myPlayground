@@ -1,0 +1,16 @@
+[project]
+name = "local-model-gateway"
+version = "0.1.0"
+description = "LiteLLM gateway in front of local open-weight models, with an end-to-end validator."
+requires-python = ">=3.13,<3.14"
+dependencies = [
+    "litellm[proxy]==1.103.3",
+    "openai==2.54.0",
+    "pyyaml==6.0.3",
+]
+
+[tool.uv]
+package = false
+# Resolve every package as it stood at least 14 days before the build: a cooling-off period
+# after the March 2026 LiteLLM PyPI compromise. Re-pin deliberately, then re-run the validator.
+exclude-newer = "2026-10-06T00:00:00Z"

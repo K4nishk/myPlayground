@@ -1,0 +1,7 @@
+# Run reports and logs are local evidence; a baseline is promoted to raw/story-updates/ instead.
+runs/
+logs/
+.venv/
+__pycache__/
+.uv-cache/
+.DS_Store
