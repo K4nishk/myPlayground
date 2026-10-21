@@ -47,9 +47,11 @@ the OpenRouter value is the public `sk-or-v1-` prefix plus 11 of its 64 secret h
 value is a 3-character prefix plus 17 characters of a UUID-shaped body. Neither is usable on its own, but
 both are now public, so the risk is low but real.
 
-> **Status (2026-10-18):** the prints are commented out in your local copy, not yet pushed. Rotation is
-> deferred; the keys expire within a month. A history rewrite to hide the old output is pending your
-> decision (see step 5).
+> **Status (2026-10-18):** the cell 3 prints are commented out and their saved output is removed. The
+> `sandbox` history was rewritten and force-pushed: no commit on the branch or in PR #1 contains the
+> prefixes (0 matches across every reachable file version). GitHub still serves the old commits at their
+> SHA URLs until GitHub Support purges them. Rotation is deferred; the keys expire within a month.
+> Remaining: steps 2 and 4.
 
 Do these steps **in this order**. If you rotate first and then re-run the old cell 3, the *new* key's
 prefix gets written into the notebook.

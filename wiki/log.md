@@ -36,6 +36,11 @@ Recent activity: `grep "^## \[" wiki/log.md | tail -5`.
 - fixed: RetryPolicy backoff timing (extension plan, state-graph gotchas, companion), OpenRouter retry wording, cell-3 status + history-rewrite limits (notebook review)
 - all other claims checked against the verified findings; no further changes
 
+## [2026-10-18] ingest | Notebook cell 3 fix + sandbox history rewrite
+- source: problem_first_ai/LangChain_LangGraph_Demo.ipynb (cell 3 prints commented out, output removed)
+- verified: 0 key-shaped strings reachable from sandbox / PR #1 head (b317927); old SHAs still served by GitHub until purged
+- updated: notebooks/langchain-langgraph-demo status
+
 ## [2026-10-20] heal | Notebook moved to preread/, course folders ignored
 - cause: problem_first_ai/LangChain_LangGraph_Demo.ipynb and requirements.txt moved, byte-identical, into problem_first_ai/preread/ (10 lint errors)
 - repointed sources: and links: overview, concepts/langgraph-state-graphs, concepts/llm-tracing, notebooks/langchain-langgraph-demo, notebooks/langgraph-two-call-extension
