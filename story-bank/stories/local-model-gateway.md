@@ -70,8 +70,39 @@ This isn't a baseline: macOS swapped during three of the four runs.
 - **Status update (3 lines):** A LiteLLM gateway fronts `deepseek-r1:14b` on the Mac and
   `gpt-6-luna` through OpenRouter, over both OpenAI APIs. Both aliases pass the same four cases.
   Next: a run with no swapping for the first local-vs-OpenRouter baseline, then vllm-metal.
-- **Interview (2-minute STAR):** TBD. Refine with the story skill once the frontier comparison
-  exists.
+- **Interview (2-minute STAR, approved 2026-10-21):**
+
+  **Situation.** My capstone asks when running your own model beats renting a frontier API. You
+  can't answer that if every client is wired to one vendor. I needed one front door that any client
+  could call, whatever served the model behind it, starting on an 18 GB Mac with little memory to
+  spare.
+
+  **Task.** I set out to build a gateway where clients ask for a role, like "reasoning", never a
+  model. Then I needed a test that proves, after every change, that each route answers correctly
+  from the right model.
+
+  **Action.** I put LiteLLM in front of a 14B open-weight model on Ollama and pinned every
+  dependency, after a real PyPI compromise of LiteLLM earlier this year. I built the validator
+  test-first: it checks the final answer, catches a starved output budget, and detects misroutes
+  from two independent sources. When load times looked random, I ran an experiment instead of
+  guessing. Loading within 2 seconds of an unload cost about 5 seconds extra, so the validator now
+  waits.
+
+  Then I added a second backend: a frontier model through OpenRouter, answering the same cases.
+  **The decision I'd defend is not calling it "frontier".** OpenRouter adds a hop and picks which
+  company serves each call, so its timings aren't the vendor's. Making it its own tier means my
+  real frontier comparison waits for a direct key. In exchange, no baseline ever quietly includes
+  an aggregator. Along the way the validator surfaced three hidden defaults. The worst was LiteLLM
+  silently loading every credential in a nearby `.env` file; now the gateway reads exactly one key.
+
+  **Result.** The local model passes every case at about 14.8 tokens per second, fully on the GPU
+  in 8.23 GiB, with no swapping. It loads in 0.8 seconds. The OpenRouter route passes the same
+  cases in 1.1 to 2.4 seconds, though I don't call that a baseline yet: my Mac was swapping during
+  those runs.
+
+  *To strengthen it:* one run with nothing else loading models, so it has no swap warning. That
+  would make the first local-vs-OpenRouter baseline, and the result could end on a clean
+  comparison.
 - **Résumé bullet:** Built a pinned LiteLLM gateway and a test-first end-to-end validator for local
   open-weight models; measured 14.8 tokens/s and a 0.8 s load, fully on the GPU, on an 18 GB Mac.
 
@@ -91,3 +122,5 @@ This isn't a baseline: macOS swapped during three of the four runs.
   second backend, the three hidden defaults, and results labelled as not a baseline.
 - 2026-10-21 — Synced with the vLLM-on-Metal decisions: the vllm-metal thread is now a
   *Planned* experiment with a Candidate, not a re-point. No new results.
+- 2026-10-21 — Interview angle refined with the story skill and approved. Every figure comes from
+  the two evidence notes.

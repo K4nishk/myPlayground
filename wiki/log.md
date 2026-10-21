@@ -66,3 +66,6 @@ Recent activity: `grep "^## \[" wiki/log.md | tail -5`.
 
 ## [2026-10-21] refactor | Agent skills setup and watched gateway docs
 - CLAUDE.md: Agent skills block (GitHub Issues, not Linear, for this repo; default triage labels; multi-context domain docs). New: GLOSSARY-MAP.md, docs/agents/{issue-tracker,triage-labels,domain}.md. .brain/watch.txt: + problem_first_ai/litellm/docs/*.md and docs/adr/*.md
+
+## [2026-10-21] heal | story refined: local-model-gateway
+- interview angle (2-minute STAR) approved and saved; changelog line
