@@ -3,9 +3,9 @@ title: Sovereign AI Engine
 type: project
 status: draft
 tags: [open-weight, peft, lora, qlora, quantization, vllm, evaluation, cost]
-sources: [raw/roadmaps/2026-10-18-sovereign-ai-engine-blueprint.md, raw/roadmaps/2026-10-18-ai-infra-project-roadmap.md]
-related: [concepts/parameter-efficient-finetuning.md, concepts/quantization.md, concepts/continuous-batching.md, concepts/kv-cache.md, concepts/llm-evaluation.md, projects/02-k8s-vllm-serving.md]
-updated: 2026-10-18
+sources: [raw/roadmaps/2026-10-18-sovereign-ai-engine-blueprint.md, raw/roadmaps/2026-10-18-ai-infra-project-roadmap.md, raw/inbox/2026-10-20-local-model-gateway-decisions.md]
+related: [concepts/parameter-efficient-finetuning.md, concepts/quantization.md, concepts/continuous-batching.md, concepts/kv-cache.md, concepts/llm-evaluation.md, projects/02-k8s-vllm-serving.md, synthesis/2026-10-20-local-model-gateway-plan.md]
+updated: 2026-10-20
 ---
 
 # 06 — Sovereign AI Engine
@@ -15,6 +15,17 @@ updated: 2026-10-18
 It runs on the serving stack built in [02](02-k8s-vllm-serving.md)–[05](05-keda-scale-to-zero.md)
 and answers one question with numbers: *when does running our own model beat
 renting a frontier API?*
+
+> **Conflict (2026-10-20):** this page places 06 on the Kubernetes stack from 02–05
+> ([roadmap](../../raw/roadmaps/2026-10-18-ai-infra-project-roadmap.md)) and proposes phase 2 as
+> 2–4B models at bf16 on vLLM. The
+> [local model gateway decisions](../../raw/inbox/2026-10-20-local-model-gateway-decisions.md) make
+> the Mac the dev loop for phases 0–2. Tonight's lineup there is a general local set (7–14B,
+> 4-bit), and 06's 2–4B candidates get their own aliases later. Capacity and utilization are still
+> measured on your own Kubernetes cluster, so this narrows the Mac's role rather than replacing the
+> 02–05 stack ([ADR 0001](../../problem_first_ai/litellm/docs/adr/0001-mac-is-the-dev-loop.md)).
+> To resolve with you: whether this page's phases 0–2 move to the Mac, and at what precision 06's
+> 2–4B candidates are compared. Plan: [local model gateway](../synthesis/2026-10-20-local-model-gateway-plan.md).
 
 ## From the blueprint
 
@@ -86,6 +97,13 @@ Monthly cost at volume *V* requests/month:
 The crossover `V*` is the smallest volume where `C_self ≤ C_api`. With
 `min_gpus` GPUs it is simply `V* = (min_gpus × gpu_month + ops_month) / cost_per_request_api`.
 
+**Planned (2026-10-20): price against the cloud, measure on owned hardware.** Scaling up GPUs
+means a cloud bill, with your own hardware as the fallback. So `gpu_month` is priced against
+**cloud GPUs**, while resource utilization (and the capacity behind `capacity_per_gpu`) is still
+recorded on the **owned cluster**
+([gateway decisions](../../raw/inbox/2026-10-20-local-model-gateway-decisions.md),
+[plan](../synthesis/2026-10-20-local-model-gateway-plan.md)).
+
 **Worked example — _illustrative_ numbers, not quotes or measurements:**
 1,000 input + 300 output tokens per request; API at $1.00 / $4.00 per million
 input/output tokens → $0.0022 per request. One GPU at $1.20/h → $876/month,
@@ -138,3 +156,4 @@ as a ready-made A/B harness between the API and the local model.
 
 - [Sovereign AI Engine blueprint — Aish's framework (2026-10-18)](../../raw/roadmaps/2026-10-18-sovereign-ai-engine-blueprint.md) — goal, baseline, three optimizations, metrics.
 - [AI infra project roadmap (2026-10-18)](../../raw/roadmaps/2026-10-18-ai-infra-project-roadmap.md) — position in the sequence.
+- [Local model gateway decisions (2026-10-20)](../../raw/inbox/2026-10-20-local-model-gateway-decisions.md) — the Mac as dev loop, crossover priced against cloud GPUs, the conflict above.
