@@ -20,6 +20,17 @@
 # Check types (named after the course dataset's answer_check_type):
 #   exact_numeric  expected: <number>   the final number (last \boxed{}, else last number) equals it
 #   contains       expected: <text> or [<text>, ...]   the answer contains any of them, ignoring case
+#
+# alias_settings say how the runner calls an alias, on every call. An alias not listed is called at
+# temperature 0, so a re-run repeats its answers.
+#   temperature    a number, or null to send none and leave the model's own default
+
+alias_settings:
+  # gpt-6-luna takes no temperature through OpenRouter (none of its endpoints lists one), and the
+  # gateway refuses temperature 0 for it on the Responses API, even at reasoning effort "none". So
+  # it runs at its default, and its answers can vary between runs.
+  frontier-reasoning:
+    temperature: null
 
 cases:
   - id: reasoning-arithmetic

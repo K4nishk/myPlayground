@@ -492,10 +492,8 @@ class CaseCoverage(RunnerTestCase):
 FRONTIER_ROUTE = "openrouter/openai/gpt-test"
 
 
-class FrontierAlias(RunnerTestCase):
-    """A frontier alias runs on a vendor API the runner can't probe: there is no load to time, but it
-    still gets an opening call, its routing is checked from the gateway's header, and it can share
-    cases with a local alias so both answer the same prompts."""
+class TwoAliases(RunnerTestCase):
+    """A local alias and a frontier alias sharing one case."""
 
     def setUp(self):
         super().setUp()
@@ -518,6 +516,12 @@ class FrontierAlias(RunnerTestCase):
             """)
         self.gateway.aliases = ["local-reasoning", "frontier-reasoning"]
         self.gateway.routes = {"frontier-reasoning": FRONTIER_ROUTE}
+
+
+class FrontierAlias(TwoAliases):
+    """A frontier alias runs on a vendor API the runner can't probe: there is no load to time, but it
+    still gets an opening call, its routing is checked from the gateway's header, and it can share
+    cases with a local alias so both answer the same prompts."""
 
     def frontier_row(self, report):
         return next(a for a in report["aliases"] if a["alias"] == "frontier-reasoning")
@@ -551,6 +555,68 @@ class FrontierAlias(RunnerTestCase):
         self.assertIn("misroute", [f["kind"] for f in report["failures"]])  # from the opening call
         frontier_case = next(c for c in report["cases"] if c["alias"] == "frontier-reasoning")
         self.assertEqual(frontier_case["failure"], "misroute")
+
+
+class AliasSettings(TwoAliases):
+    """cases.yaml's alias_settings say how the runner calls an alias. Without them every call is sent at
+    temperature 0, so a re-run repeats the answers; `temperature: null` sends none, for a model that refuses it."""
+
+    def bodies(self, alias):
+        return [r[2] for r in self.gateway.requests if r[0] == "POST" and r[2].get("model") == alias]
+
+    def test_every_call_is_sent_at_temperature_zero_by_default(self):
+        proc, report = self.run_runner()
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        for alias in ("local-reasoning", "frontier-reasoning"):
+            self.assertEqual([b.get("temperature") for b in self.bodies(alias)], [0, 0])  # opening call, case
+
+    def test_an_alias_set_to_temperature_null_is_sent_no_temperature(self):
+        self.write_cases("""\
+            alias_settings:
+              frontier-reasoning: {temperature: null}
+            cases:
+              - id: sum
+                alias: [local-reasoning, frontier-reasoning]
+                api: responses
+                prompt: What is 12 + 30? Reply with the number only.
+                output_budget: 2048
+                checks:
+                  - {type: exact_numeric, expected: 42}
+            """)
+        proc, report = self.run_runner()
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        frontier_bodies = self.bodies("frontier-reasoning")
+        self.assertEqual(len(frontier_bodies), 2)
+        self.assertTrue(all("temperature" not in b for b in frontier_bodies), frontier_bodies)
+        self.assertEqual([b.get("temperature") for b in self.bodies("local-reasoning")], [0, 0])
+        self.assertEqual({c["alias"]: c["temperature"] for c in report["cases"]},
+                         {"local-reasoning": 0, "frontier-reasoning": None})
+
+    def test_settings_for_an_alias_the_config_lacks_are_a_config_error(self):
+        self.write_cases("""\
+            alias_settings:
+              local-text: {temperature: null}
+            cases:
+              - {id: a, alias: [local-reasoning, frontier-reasoning], api: chat, prompt: hi, output_budget: 16,
+                 checks: [{type: contains, expected: hi}]}
+            """)
+        proc, report = self.run_runner()
+        self.assertEqual(proc.returncode, 1)
+        self.assertIn("config error", proc.stderr)
+        self.assertIn("local-text", proc.stderr)
+
+    def test_an_unknown_alias_setting_is_a_config_error(self):
+        self.write_cases("""\
+            alias_settings:
+              frontier-reasoning: {temprature: null}
+            cases:
+              - {id: a, alias: [local-reasoning, frontier-reasoning], api: chat, prompt: hi, output_budget: 16,
+                 checks: [{type: contains, expected: hi}]}
+            """)
+        proc, report = self.run_runner()
+        self.assertEqual(proc.returncode, 1)
+        self.assertIn("config error", proc.stderr)
+        self.assertIn("temprature", proc.stderr)
 
 
 def closed_port_url():
