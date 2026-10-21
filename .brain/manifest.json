@@ -1,5 +1,9 @@
 {
   "sources": {
+    "problem_first_ai/litellm/JOURNAL.md": {
+      "sha256": "d4d4f69216bcd4650ba72b54e1310ca72133b9542bacae17c8d6fae9cbbcd315",
+      "ingested": "2026-10-21"
+    },
     "problem_first_ai/preread/LangChain_LangGraph_Demo.ipynb": {
       "sha256": "c838f5cf20eb97b7249f0589b8b244af00db4557d6a8cfb0ceef2d8e78fde730",
       "ingested": "2026-10-20"
@@ -15,6 +19,10 @@
     "raw/roadmaps/2026-10-18-sovereign-ai-engine-blueprint.md": {
       "sha256": "767f0e8a444895d8c3d66be02a15b53ecdb704993147ca96d25e3e0054670593",
       "ingested": "2026-10-18"
+    },
+    "raw/story-updates/2026-10-21-local-model-gateway-baseline.md": {
+      "sha256": "3a07f9a302118951d4605c95b36ea945fe61654eb0e2ba2e8d099d0714735181",
+      "ingested": "2026-10-21"
     }
   }
 }

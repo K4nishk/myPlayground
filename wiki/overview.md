@@ -3,8 +3,8 @@ title: Overview — AI Infrastructure & Sovereign AI Roadmap
 type: overview
 status: draft
 tags: [roadmap, overview]
-sources: [raw/roadmaps/2026-10-18-ai-infra-project-roadmap.md, raw/roadmaps/2026-10-18-sovereign-ai-engine-blueprint.md, problem_first_ai/preread/LangChain_LangGraph_Demo.ipynb, raw/inbox/2026-10-20-local-model-gateway-decisions.md]
-updated: 2026-10-20
+sources: [raw/roadmaps/2026-10-18-ai-infra-project-roadmap.md, raw/roadmaps/2026-10-18-sovereign-ai-engine-blueprint.md, problem_first_ai/preread/LangChain_LangGraph_Demo.ipynb, raw/inbox/2026-10-20-local-model-gateway-decisions.md, raw/story-updates/2026-10-21-local-model-gateway-baseline.md]
+updated: 2026-10-21
 ---
 
 # Overview — AI Infrastructure & Sovereign AI Roadmap
@@ -85,7 +85,10 @@ A LiteLLM gateway gives one front door to models in three tiers
 
 It feeds [06](projects/06-sovereign-ai-engine.md). Comparing the same role across all three tiers
 is *Planned*. So is pricing 06's crossover against cloud GPUs while utilization is recorded on the
-owned cluster. The first slice is one `local` alias, being built on 2026-10-20. The track's plan
+owned cluster. The first slice is built and measured (2026-10-21). One `local` alias,
+`deepseek-r1:14b` on Ollama, passes every validator case over Chat Completions and the Responses
+API at about 14.8 tokens/s, using 8.23 GiB of GPU memory with no swapping
+([baseline](../raw/story-updates/2026-10-21-local-model-gateway-baseline.md)). The track's plan
 conflicts with the stack 06 assumed; see the callout on the
 [project 06 page](projects/06-sovereign-ai-engine.md).
 
@@ -102,3 +105,4 @@ track, fix the notebook's housekeeping first: rotate the leaked key prefixes, th
 - [AI infra project roadmap (2026-10-18)](../raw/roadmaps/2026-10-18-ai-infra-project-roadmap.md)
 - [Sovereign AI Engine blueprint — Aish's framework (2026-10-18)](../raw/roadmaps/2026-10-18-sovereign-ai-engine-blueprint.md)
 - [Local model gateway decisions (2026-10-20)](../raw/inbox/2026-10-20-local-model-gateway-decisions.md)
+- [Local model gateway baseline (2026-10-21)](../raw/story-updates/2026-10-21-local-model-gateway-baseline.md) — the first slice's measured results.
