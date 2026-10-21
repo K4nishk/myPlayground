@@ -3,7 +3,7 @@ title: Overview — AI Infrastructure & Sovereign AI Roadmap
 type: overview
 status: draft
 tags: [roadmap, overview]
-sources: [raw/roadmaps/2026-10-18-ai-infra-project-roadmap.md, raw/roadmaps/2026-10-18-sovereign-ai-engine-blueprint.md, problem_first_ai/preread/LangChain_LangGraph_Demo.ipynb, raw/inbox/2026-10-20-local-model-gateway-decisions.md, raw/story-updates/2026-10-21-local-model-gateway-baseline.md]
+sources: [raw/roadmaps/2026-10-18-ai-infra-project-roadmap.md, raw/roadmaps/2026-10-18-sovereign-ai-engine-blueprint.md, problem_first_ai/preread/LangChain_LangGraph_Demo.ipynb, raw/inbox/2026-10-20-local-model-gateway-decisions.md, raw/story-updates/2026-10-21-local-model-gateway-baseline.md, raw/story-updates/2026-10-21-openrouter-alias-first-runs.md]
 updated: 2026-10-21
 ---
 
@@ -26,7 +26,7 @@ flowchart LR
   P2 & P4 & P5 --> P6[06 Sovereign<br/>AI Engine]
   L[LangGraph<br/>two-call track] -.agent pattern.-> P1 & P3
   L -.A/B harness.-> P6
-  GW[Local model<br/>gateway track] -.local · cluster · frontier.-> P6
+  GW[Local model<br/>gateway track] -.local · cluster · openrouter · frontier.-> P6
 ```
 
 ## The measurement chain
@@ -74,22 +74,28 @@ offline-runnable companion notebook in `labs/langgraph-two-call/`.
 
 ## Local model gateway track
 
-A LiteLLM gateway gives one front door to models in three tiers
+A LiteLLM gateway gives one front door to models in four tiers
 ([plan](synthesis/2026-10-20-local-model-gateway-plan.md),
 [decisions](../raw/inbox/2026-10-20-local-model-gateway-decisions.md)):
 
 - **`local`**: this Mac, the dev loop where aliases and the validator are built and checked.
 - **`cluster`**: Kubernetes on your own NVIDIA hardware, where capacity and utilization are
   measured.
-- **`frontier`**: a vendor API, the baseline.
+- **`openrouter`**: a vendor's model reached through OpenRouter. Added 2026-10-21; its timings
+  include OpenRouter's hop
+  ([ADR 0003](../problem_first_ai/litellm/docs/adr/0003-openrouter-is-its-own-tier.md)).
+- **`frontier`**: a vendor API called directly, the baseline.
 
 It feeds [06](projects/06-sovereign-ai-engine.md). Comparing the same role across all three tiers
 is *Planned*. So is pricing 06's crossover against cloud GPUs while utilization is recorded on the
 owned cluster. The first slice is built and measured (2026-10-21). One `local` alias,
 `deepseek-r1:14b` on Ollama, passes every validator case over Chat Completions and the Responses
 API at about 14.8 tokens/s, using 8.23 GiB of GPU memory with no swapping
-([baseline](../raw/story-updates/2026-10-21-local-model-gateway-baseline.md)). The track's plan
-conflicts with the stack 06 assumed; see the callout on the
+([baseline](../raw/story-updates/2026-10-21-local-model-gateway-baseline.md)). Since then,
+`openrouter-reasoning` (`gpt-6-luna`) answers the same cases, in 1.10–2.36 s across its two passing
+runs. Those aren't a baseline yet, because macOS swapped
+([first-runs note](../raw/story-updates/2026-10-21-openrouter-alias-first-runs.md)). The track's
+plan conflicts with the stack 06 assumed; see the callout on the
 [project 06 page](projects/06-sovereign-ai-engine.md).
 
 ## Where things stand (2026-10-18)
@@ -106,3 +112,4 @@ track, fix the notebook's housekeeping first: rotate the leaked key prefixes, th
 - [Sovereign AI Engine blueprint — Aish's framework (2026-10-18)](../raw/roadmaps/2026-10-18-sovereign-ai-engine-blueprint.md)
 - [Local model gateway decisions (2026-10-20)](../raw/inbox/2026-10-20-local-model-gateway-decisions.md)
 - [Local model gateway baseline (2026-10-21)](../raw/story-updates/2026-10-21-local-model-gateway-baseline.md) — the first slice's measured results.
+- [OpenRouter alias: first runs (2026-10-21)](../raw/story-updates/2026-10-21-openrouter-alias-first-runs.md) — the OpenRouter alias beside the local model.

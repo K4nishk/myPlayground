@@ -3,7 +3,7 @@ title: LLM Evaluation (Quality, Latency, Throughput, Cost)
 type: concept
 status: draft
 tags: [evaluation, llm-as-judge, latency, throughput, benchmarking]
-sources: [raw/roadmaps/2026-10-18-sovereign-ai-engine-blueprint.md, raw/story-updates/2026-10-21-local-model-gateway-baseline.md, problem_first_ai/litellm/JOURNAL.md]
+sources: [raw/roadmaps/2026-10-18-sovereign-ai-engine-blueprint.md, raw/story-updates/2026-10-21-local-model-gateway-baseline.md, problem_first_ai/litellm/JOURNAL.md, raw/story-updates/2026-10-21-openrouter-alias-first-runs.md]
 related: [concepts/continuous-batching.md, projects/06-sovereign-ai-engine.md, projects/02-k8s-vllm-serving.md, notebooks/langgraph-two-call-extension.md]
 updated: 2026-10-21
 ---
@@ -72,7 +72,14 @@ the volume where they cross is the
 ## Hygiene
 
 - Freeze the eval set and the prompts; version both.
-- Same decoding settings (temperature, max tokens) across candidates.
+- Same decoding settings (temperature, max tokens) across candidates. When a model can't take the
+  same setting, record what each was sent, and expect its answers to vary. `gpt-6-luna` through
+  OpenRouter takes no temperature: its riddle answer changed wording between runs while the local
+  model's output token counts stayed identical
+  ([first-runs note](../../raw/story-updates/2026-10-21-openrouter-alias-first-runs.md)).
+- Report the first failure, not the last. A harness can hide one failure behind another: after a
+  401 from OpenRouter, LiteLLM's cooldown answered the next four calls with its own 429
+  ([journal](../../problem_first_ai/litellm/JOURNAL.md)).
 - Time one thing per number. Model load, the first call and steady-state calls are separate
   measurements; a "cold call" that includes a reply hides the load
   ([baseline](../../raw/story-updates/2026-10-21-local-model-gateway-baseline.md)).
@@ -90,5 +97,6 @@ the volume where they cross is the
 
 - [Sovereign AI Engine blueprint](../../raw/roadmaps/2026-10-18-sovereign-ai-engine-blueprint.md) — quality rubrics / LLM-as-a-judge, P95/P99, throughput, crossover.
 - [Local model gateway baseline (2026-10-21)](../../raw/story-updates/2026-10-21-local-model-gateway-baseline.md) — final-answer extraction, starved budgets, timing one thing per number.
-- [Local model gateway journal](../../problem_first_ai/litellm/JOURNAL.md) — why the numeric check reads the final number.
+- [Local model gateway journal](../../problem_first_ai/litellm/JOURNAL.md) — why the numeric check reads the final number; the cooldown that hid a 401.
+- [OpenRouter alias: first runs (2026-10-21)](../../raw/story-updates/2026-10-21-openrouter-alias-first-runs.md) — answers that vary when a model takes no temperature.
 - Background: Zheng et al., "Judging LLM-as-a-Judge with MT-Bench and Chatbot Arena", 2023.

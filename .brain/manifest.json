@@ -1,7 +1,7 @@
 {
   "sources": {
     "problem_first_ai/litellm/JOURNAL.md": {
-      "sha256": "d4d4f69216bcd4650ba72b54e1310ca72133b9542bacae17c8d6fae9cbbcd315",
+      "sha256": "628591d26b27e3011829f6bb172e0d8242cdc4c94544b46992892685203d753e",
       "ingested": "2026-10-21"
     },
     "problem_first_ai/preread/LangChain_LangGraph_Demo.ipynb": {
@@ -22,6 +22,10 @@
     },
     "raw/story-updates/2026-10-21-local-model-gateway-baseline.md": {
       "sha256": "3a07f9a302118951d4605c95b36ea945fe61654eb0e2ba2e8d099d0714735181",
+      "ingested": "2026-10-21"
+    },
+    "raw/story-updates/2026-10-21-openrouter-alias-first-runs.md": {
+      "sha256": "766d5c979c06448260d6b07783676b03e6bb238a8232f32af797a8d11fbebd93",
       "ingested": "2026-10-21"
     }
   }

@@ -57,3 +57,6 @@ Recent activity: `grep "^## \[" wiki/log.md | tail -5`.
 
 ## [2026-10-21] ingest | Local model gateway baseline and journal
 - touched: synthesis/2026-10-20-local-model-gateway-plan, concepts/cold-starts, concepts/llm-evaluation, overview, index; story-bank/stories/local-model-gateway (new), story-bank/index
+
+## [2026-10-21] ingest | OpenRouter alias first runs and journal (2026-10-21 afternoon)
+- touched: synthesis/2026-10-20-local-model-gateway-plan (fourth tier with Conflict callout, OpenRouter first runs, key and alias settings), concepts/cold-starts (loads after Ollama's idle unload), concepts/llm-evaluation (settings a model can't take, failures hiding failures), overview (four tiers), projects/06-sovereign-ai-engine (frontier timings need a direct API), index; story-bank/stories/local-model-gateway (evidence, action, result, open threads), story-bank/index
