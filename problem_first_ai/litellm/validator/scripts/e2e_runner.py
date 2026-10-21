@@ -50,7 +50,6 @@ BLOCKING_FAILURES = frozenset({"backend_unhealthy", "gateway_unreachable", "gate
 RUN_FAILURES = BLOCKING_FAILURES | {"alias_mismatch", "misroute"}
 CASE_FAILURES = frozenset({"error", "misroute", "budget_exhausted", "empty_answer", "check_failed"})
 WARNINGS = frozenset({"swap", "swap_unknown", "context_mismatch"})
-ALIAS_SETTINGS = frozenset({"temperature"})
 NUMBER = re.compile(r"-?\d[\d,]*(?:\.\d+)?")
 THINK = re.compile(r"<think>(.*?)(?:</think>|$)", re.DOTALL)
 
@@ -102,7 +101,7 @@ def load_aliases(path: str | Path) -> dict[str, Alias]:
     return aliases
 
 
-def load_alias_settings(path: str | Path, aliases: dict[str, Alias]) -> dict[str, Alias]:
+def apply_alias_settings(path: str | Path, aliases: dict[str, Alias]) -> dict[str, Alias]:
     """Apply the cases file's alias_settings, which say how the runner calls an alias."""
     data = yaml.safe_load(Path(path).read_text()) or {}
     settings = data.get("alias_settings") or {}
@@ -112,15 +111,13 @@ def load_alias_settings(path: str | Path, aliases: dict[str, Alias]) -> dict[str
     for name, values in settings.items():
         if name not in aliases:
             raise ConfigError(f"{path}: alias_settings names {name!r}, which is not in the gateway config")
-        if not isinstance(values, dict):
-            raise ConfigError(f"{path}: alias_settings for {name!r} must be a mapping")
-        if unknown := sorted(set(values) - ALIAS_SETTINGS):
-            raise ConfigError(f"{path}: alias_settings for {name!r} has unknown setting(s) {unknown}; "
-                              f"known: {sorted(ALIAS_SETTINGS)}")
+        if not isinstance(values, dict) or set(values) - {"temperature"}:
+            raise ConfigError(f"{path}: alias_settings for {name!r} may only set temperature, got {values!r}")
         temperature = values.get("temperature", 0)
-        if temperature is not None and not isinstance(temperature, (int, float)):
+        # YAML's true and false load as bools, which Python also counts as ints.
+        if isinstance(temperature, bool) or not (temperature is None or isinstance(temperature, (int, float))):
             raise ConfigError(f"{path}: alias_settings for {name!r}: temperature must be a number or null")
-        aliases[name] = replace(aliases[name], **values)
+        aliases[name] = replace(aliases[name], temperature=temperature)
     return aliases
 
 
@@ -560,8 +557,9 @@ def describe_alias(a: dict) -> str:
         start = f"load {fmt(a['load_s'], ' s')} ({before}), opening call {fmt(a['opening_call_s'], ' s')}"
     else:
         start = f"already resident, opening call {fmt(a['opening_call_s'], ' s')}"
-    text = (f"  {a['alias']} -> {a['backend_model']}: {start}, {fmt(a['resident_gib'], ' GiB')} resident "
-            f"({fmt(a['gpu_gib'], ' GiB')} on GPU), context {fmt(a['context_length'])}")
+    temperature = "no temperature sent" if a["temperature"] is None else f"temperature {a['temperature']}"
+    text = (f"  {a['alias']} -> {a['backend_model']} ({temperature}): {start}, {fmt(a['resident_gib'], ' GiB')} "
+            f"resident ({fmt(a['gpu_gib'], ' GiB')} on GPU), context {fmt(a['context_length'])}")
     for label in ("misroute", "error"):
         if a[label]:
             text += f"  {label.upper()} {a[label]}"
@@ -622,7 +620,7 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
     try:
-        aliases = load_alias_settings(args.cases, load_aliases(args.config))
+        aliases = apply_alias_settings(args.cases, load_aliases(args.config))
         cases = load_cases(args.cases, aliases)
     except (ConfigError, OSError, yaml.YAMLError) as exc:
         print(f"config error: {exc}", file=sys.stderr)

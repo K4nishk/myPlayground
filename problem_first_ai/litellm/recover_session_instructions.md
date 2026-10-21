@@ -26,7 +26,7 @@ and runs the validator.
 ## Your pending steps
 
 Done on 2026-10-21: the pre-commit hook, the `.claude/settings.json` commit, the push, and the
-OpenRouter alias (validated 8/8, with swapping).
+OpenRouter alias.
 
 1. **Restart the gateway.** The OpenRouter alias is now `openrouter-reasoning`
    ([ADR 0003](docs/adr/0003-openrouter-is-its-own-tier.md)); until the gateway restarts, the

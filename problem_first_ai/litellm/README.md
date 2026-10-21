@@ -71,7 +71,7 @@ Two files live at the repo root, because Claude Code sessions for this work star
    `run_proxy.sh` takes that one variable from `problem_first_ai/.env` (`GATEWAY_ENV_FILE`
    overrides the path) and never prints it. It also sets `LITELLM_MODE=PRODUCTION`: in its
    default mode LiteLLM loads the first `.env` it finds above its install folder, which here is
-   that file, with every credential in it. Give the key a credit limit on OpenRouter, because
+   that file, with every credential in it (tested 2026-10-21; `JOURNAL.md`). Give the key a credit limit on OpenRouter, because
    anything on this Mac that knows the master key can spend through the alias.
 5. **Validate:**
 
@@ -104,6 +104,8 @@ Two files live at the repo root, because Claude Code sessions for this work star
 - **Add an OpenRouter alias:** name it `openrouter-<role>`, like `openrouter-reasoning`, and
   reference its key as `api_key: os.environ/OPENROUTER_API_KEY`. Never write a key value into a
   file. To compare it with a local alias, list both under one case's `alias:` in `cases.yaml`.
+  If its model refuses a temperature, give the alias `temperature: null` under `alias_settings`
+  in `cases.yaml`, as `openrouter-reasoning` has; otherwise the validator sends temperature 0.
 - **Add a frontier alias** (*Planned*): a vendor API called directly with that vendor's own key,
   for example `api_key: os.environ/OPENAI_API_KEY`, so its timings have no aggregator in them
   ([ADR 0003](docs/adr/0003-openrouter-is-its-own-tier.md)).

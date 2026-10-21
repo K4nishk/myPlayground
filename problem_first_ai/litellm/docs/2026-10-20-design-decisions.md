@@ -4,6 +4,12 @@ Decided by Kanishk in a design session in `problem_first_ai/litellm/`; written u
 Terms are defined in [`GLOSSARY.md`](../GLOSSARY.md); the two hard-to-reverse decisions are in
 [`docs/adr/`](adr/).
 
+> **Updated (2026-10-21):** there is now a fourth tier, `openrouter`, for a vendor's model reached
+> through OpenRouter ([ADR 0003](adr/0003-openrouter-is-its-own-tier.md)). `openrouter-reasoning`
+> → `gpt-6-luna` is built and reads `OPENROUTER_API_KEY`; `frontier-*` waits for a vendor API
+> called directly. Where the lines below say three tiers, or that only frontier aliases read a
+> key, read "aliases on a vendor API (the `openrouter` and `frontier` tiers)".
+
 ## Decided
 
 - A LiteLLM gateway is the routing layer between a frontier API and open-weight models, in the

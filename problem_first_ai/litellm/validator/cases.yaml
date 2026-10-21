@@ -26,9 +26,11 @@
 #   temperature    a number, or null to send none and leave the model's own default
 
 alias_settings:
-  # gpt-6-luna takes no temperature through OpenRouter (none of its endpoints lists one), and the
-  # gateway refuses temperature 0 for it on the Responses API, even at reasoning effort "none". So
-  # it runs at its default, and its answers can vary between runs.
+  # gpt-6-luna takes no temperature through OpenRouter: none of the upstreams OpenRouter lists for
+  # it takes one (openrouter.ai/api/v1/models/openai/gpt-6-luna/endpoints, read 2026-10-21).
+  # LiteLLM 1.103.3 also refuses temperature 0 for it on the Responses API, even at reasoning effort
+  # "none", because its model map has no gpt-6-luna entry (llms/openai/responses/transformation.py).
+  # So it runs at its default, and its answers can vary between runs (JOURNAL.md, 2026-10-21).
   openrouter-reasoning:
     temperature: null
 

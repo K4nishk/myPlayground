@@ -65,7 +65,7 @@ so and ask the developer to run it.
 | `empty_answer` | The model finished with no answer, often all thinking | `ollama show <model>` for its template and capabilities |
 | `check_failed` | The answer is wrong | Quote `answer_preview`. At temperature 0 (the default) a re-run repeats it; an alias with `temperature: null` in `alias_settings` (the OpenRouter one) may answer differently, so re-run once before calling it wrong |
 | `error` | The call raised an exception | The detail, then the end of `logs/proxy.log` |
-| `error` on the OpenRouter alias | The detail carries the HTTP status. 400 `UnsupportedParamsError`: the gateway refused a parameter the model doesn't accept (the config has no `drop_params`, on purpose). 401: OpenRouter refused the key: missing, revoked, or with an expiry longer than the account allows. 402: the key's credit limit or the account balance ran out. 429 from OpenRouter: rate limited. A 429 saying "No deployments available… cooldown" is LiteLLM pausing the alias after an earlier failure, which `disable_cooldowns` in the config should prevent: find that first failure | Quote the detail's message. For 401, the first line of `logs/proxy.log`: `run_proxy.sh` writes a warning there when it found no `OPENROUTER_API_KEY`. Never read, print or copy any `.env` file; checking the key and its credits on openrouter.ai is the developer's job |
+| `error` on the OpenRouter alias | The detail carries the HTTP status. 400 `UnsupportedParamsError`: the gateway refused a parameter the model doesn't accept (the config has no `drop_params`, on purpose). 401: OpenRouter refused the key: missing, revoked, or with an expiry longer than the account allows (seen 2026-10-21; `problem_first_ai/litellm/JOURNAL.md`). 402: the key's credit limit or the account balance ran out. 429 from OpenRouter: rate limited. A 429 saying "No deployments available… cooldown" is LiteLLM pausing the alias after an earlier failure, which `disable_cooldowns` in the config should prevent: find that first failure | Quote the detail's message. For 401, the first line of `logs/proxy.log`: `run_proxy.sh` writes a warning there when it found no `OPENROUTER_API_KEY`. Never read, print or copy any `.env` file; checking the key and its credits on openrouter.ai is the developer's job |
 
 Warnings never fail a run:
 
@@ -80,10 +80,10 @@ Warnings never fail a run:
 The values below are illustrative; fill them in from the report.
 
 ```
-| Alias                | Backend model     | Load  | Opening call | Resident (GPU) | Context | Cases | Result |
-|----------------------|-------------------|-------|--------------|----------------|---------|-------|--------|
-| local-reasoning      | deepseek-r1:14b   | 6.0 s | 1.1 s        | 8.2 GiB (8.2)  | 4096    | 4/4   | PASS   |
-| openrouter-reasoning | openai/gpt-6-luna | n/a   | 0.9 s        | n/a            | n/a     | 4/4   | PASS   |
+| Alias                | Backend model     | Temperature | Load  | Opening call | Resident (GPU) | Context | Cases | Result |
+|----------------------|-------------------|-------------|-------|--------------|----------------|---------|-------|--------|
+| local-reasoning      | deepseek-r1:14b   | 0           | 6.0 s | 1.1 s        | 8.2 GiB (8.2)  | 4096    | 4/4   | PASS   |
+| openrouter-reasoning | openai/gpt-6-luna | not sent    | n/a   | 0.9 s        | n/a            | n/a     | 4/4   | PASS   |
 
 | Case                 | API  | local-reasoning      | openrouter-reasoning |
 |----------------------|------|----------------------|----------------------|
@@ -91,7 +91,7 @@ The values below are illustrative; fill them in from the report.
 ```
 
 List failed cases first, each with its alias and `detail`. End with the swap result and
-`report_path`. An OpenRouter latency includes OpenRouter's hop, its choice of provider and the
+`report_path`. An OpenRouter latency includes OpenRouter's hop, its choice of upstream and the
 network, so say so when you compare it with a local one; it is not a frontier timing (ADR 0003).
 
 ## Rules

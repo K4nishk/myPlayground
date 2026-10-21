@@ -35,6 +35,10 @@ _Avoid_: provider, endpoint
 The concrete model a backend serves for an alias.
 _Avoid_: endpoint, alias
 
+**Upstream**:
+The company whose servers actually run a model reached through OpenRouter, such as OpenAI, Azure or Amazon Bedrock; OpenRouter may pick a different one for each call.
+_Avoid_: provider, endpoint
+
 **Resident**:
 A backend model loaded in memory, able to answer without first being loaded.
 _Avoid_: running, active, hot

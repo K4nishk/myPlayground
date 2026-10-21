@@ -9,7 +9,7 @@ the validator. Terms (alias, backend model, load, opening call, case) are in
 | `local-reasoning` | `deepseek-r1:14b` on Ollama, on this Mac | `local` |
 | `openrouter-reasoning` | `gpt-6-luna` through OpenRouter | `openrouter` |
 
-`openrouter-reasoning` timings include OpenRouter's hop and its choice of provider, so they aren't
+`openrouter-reasoning` timings include OpenRouter's hop and its choice of upstream, so they aren't
 frontier timings ([ADR 0003](docs/adr/0003-openrouter-is-its-own-tier.md)).
 
 ## Before you start
@@ -43,7 +43,7 @@ Check from window C: `curl -s localhost:11434/api/version` prints `{"version":"0
 ```
 
 - **Good:** `Starting LiteLLM gateway on http://127.0.0.1:4000`, then LiteLLM's startup lines.
-- **Bad:** a line starting `WARNING: OPENROUTER_API_KEY is neither exported nor in ../.env`. The
+- **Bad:** a line starting `WARNING: OPENROUTER_API_KEY is neither exported nor readable`. The
   local alias still works, but `openrouter-reasoning` will fail until you add the key and restart.
 - Restart the gateway (Ctrl-C, then the same command) after any change to `litellm_config.yaml`
   or to the key.
@@ -71,12 +71,13 @@ curl -s http://127.0.0.1:4000/v1/chat/completions \
   in `\boxed{391}`, even when asked for the number only.
 - **The thinking** is in `reasoning_content`, kept out of the answer by the gateway.
 - **Timing:** each baseline case took 13–21 s end to end (baseline note). If the model wasn't
-  loaded, the first call also waits for the load.
+  loaded, this is a cold call: it also waits for the load.
 
 ## 5. Ask the OpenRouter model
 
-The same call to the other alias, without `temperature`: none of `gpt-6-luna`'s OpenRouter
-endpoints takes one, and the gateway refuses `temperature: 0` for it on the Responses API.
+The same call to the other alias, without `temperature`: none of the upstreams OpenRouter lists
+for `gpt-6-luna` takes one, and the gateway refuses `temperature: 0` for it on the Responses API
+(the comment above `alias_settings` in `validator/cases.yaml` cites both).
 
 ```bash
 curl -s http://127.0.0.1:4000/v1/chat/completions \
@@ -86,8 +87,7 @@ curl -s http://127.0.0.1:4000/v1/chat/completions \
   | python3 -m json.tool
 ```
 
-Expect `"content": "391"` within a few seconds. Without a temperature, its answers can vary from
-run to run.
+Expect `"content": "391"`. Without a temperature, its answers can vary from run to run.
 
 ## 6. Compare both aliases on both APIs
 
@@ -150,11 +150,11 @@ with no warnings can become a baseline; ask Claude to record it as a story updat
 | `curl: (7) Failed to connect` to port 4000 | The gateway isn't running | Step 2 |
 | `alias_mismatch` in the validator | The gateway started with an older config | Restart the gateway |
 | The `WARNING` line from step 2 | No `OPENROUTER_API_KEY` in `problem_first_ai/.env` | Add it, restart the gateway |
-| 401 on `openrouter-reasoning` | OpenRouter refused the key: revoked, expired, or with an expiry longer than your account allows | Make a new key, put it in `.env`, restart the gateway |
+| 401 on `openrouter-reasoning` | OpenRouter refused the key: revoked, expired, or with an expiry longer than your account allows (seen 2026-10-21; `JOURNAL.md`) | Make a new key, put it in `.env`, restart the gateway |
 | 402 on `openrouter-reasoning` | The key's credit limit or your balance ran out | Check it on openrouter.ai |
 | 400 `UnsupportedParamsError` | A parameter the model doesn't take, such as `temperature` on `openrouter-reasoning` | Leave that parameter out |
 | A `swap` warning | macOS swapped during the run, so the timings are inflated | Quit apps and run again; don't use it as a baseline |
-| The first local call is slow | The model is loading | Normal once; Ollama unloads it again after a few idle minutes |
+| A local call after a break is slow | It's a cold call: the model is loading | Normal. Ollama unloads an idle model after its `keep_alive`, 5 minutes by default ([Ollama API docs](https://github.com/ollama/ollama/blob/main/docs/api.md)) |
 
 The gateway's log is `logs/proxy.log` in this folder. The validator skill's diagnosis table
 (`.claude/skills/local-model-e2e-validator/SKILL.md` at the repo root) covers every failure kind.

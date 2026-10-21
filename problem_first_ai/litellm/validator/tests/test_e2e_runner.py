@@ -605,6 +605,32 @@ class AliasSettings(TwoAliases):
         self.assertIn("config error", proc.stderr)
         self.assertIn("local-text", proc.stderr)
 
+    def test_the_table_shows_which_aliases_ran_without_a_temperature(self):
+        self.write_cases("""\
+            alias_settings:
+              openrouter-reasoning: {temperature: null}
+            cases:
+              - {id: a, alias: [local-reasoning, openrouter-reasoning], api: chat, prompt: hi, output_budget: 16,
+                 checks: [{type: contains, expected: "391"}]}
+            """)
+        proc, _ = self.run_runner(json_output=False)
+        lines = {l.strip().split(" ->")[0]: l for l in proc.stdout.splitlines() if " -> " in l}
+        self.assertIn("no temperature sent", lines["openrouter-reasoning"])
+        self.assertIn("temperature 0", lines["local-reasoning"])
+
+    def test_a_temperature_that_isnt_a_number_is_a_config_error(self):
+        self.write_cases("""\
+            alias_settings:
+              openrouter-reasoning: {temperature: true}
+            cases:
+              - {id: a, alias: [local-reasoning, openrouter-reasoning], api: chat, prompt: hi, output_budget: 16,
+                 checks: [{type: contains, expected: hi}]}
+            """)
+        proc, report = self.run_runner()
+        self.assertEqual(proc.returncode, 1)
+        self.assertIn("config error", proc.stderr)
+        self.assertIn("temperature", proc.stderr)
+
     def test_an_unknown_alias_setting_is_a_config_error(self):
         self.write_cases("""\
             alias_settings:

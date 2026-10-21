@@ -14,8 +14,9 @@ cd "$(dirname "$0")"
 export LITELLM_MASTER_KEY="${LITELLM_MASTER_KEY:-sk-local-dev}"
 # Use the cost map bundled with the pinned release instead of fetching one from GitHub.
 export LITELLM_LOCAL_MODEL_COST_MAP=True
-# Stop LiteLLM loading a .env by itself. In its default DEV mode it searches upward from its install
-# folder, reaches problem_first_ai/.env, and loads every credential in it.
+# Stop LiteLLM loading a .env by itself (litellm/__init__.py and proxy/proxy_cli.py in 1.103.3). In
+# its default DEV mode it searches upward from its install folder, reaches problem_first_ai/.env,
+# and loads every credential in it (tested 2026-10-21; JOURNAL.md).
 export LITELLM_MODE=PRODUCTION
 
 if ! command -v uv >/dev/null 2>&1; then
@@ -27,14 +28,16 @@ fi
 # and nothing else, from the course's .env (GATEWAY_ENV_FILE overrides the path). Never printed.
 env_file="${GATEWAY_ENV_FILE:-../.env}"
 if [ -z "${OPENROUTER_API_KEY:-}" ] && [ -f "$env_file" ]; then
+  # A failed read leaves the key empty rather than stopping here, so the warning below still
+  # reaches logs/proxy.log.
   OPENROUTER_API_KEY="$(uv run --frozen python -I -c \
     'import sys; from dotenv import dotenv_values; print(dotenv_values(sys.argv[1]).get("OPENROUTER_API_KEY") or "")' \
-    "$env_file")"
+    "$env_file")" || OPENROUTER_API_KEY=""
   export OPENROUTER_API_KEY
 fi
 key_warning=""
 if [ -z "${OPENROUTER_API_KEY:-}" ]; then
-  key_warning="WARNING: OPENROUTER_API_KEY is neither exported nor in $env_file, so openrouter aliases will fail."
+  key_warning="WARNING: OPENROUTER_API_KEY is neither exported nor readable from $env_file, so openrouter aliases will fail."
 fi
 
 if (exec 3<>/dev/tcp/127.0.0.1/4000) 2>/dev/null; then
