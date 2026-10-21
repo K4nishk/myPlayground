@@ -1,11 +1,13 @@
 # Local model gateway
 
 A LiteLLM gateway on `127.0.0.1:4000` in front of open-weight models served by Ollama on this
-Mac, plus a Claude skill that checks every alias end to end after each change.
+Mac and a frontier model reached through OpenRouter, plus a Claude skill that checks every alias
+end to end after each change.
 
-Clients call an **alias** (`local-reasoning`), never a model; the gateway maps it to a backend
-model (`deepseek-r1:14b` on Ollama). Moving an alias to another model or to vLLM later is a
-one-line change in `litellm_config.yaml`, and the validator proves nothing broke. Terms are in
+Clients call an **alias** (`local-reasoning`, `frontier-reasoning`), never a model; the gateway
+maps it to a backend model (`deepseek-r1:14b` on Ollama, `gpt-6-luna` through OpenRouter). Both
+aliases answer the same cases, so each run compares them. Moving an alias to another model or to
+vLLM later is a one-line change in `litellm_config.yaml`, and the validator proves nothing broke. Terms are in
 [GLOSSARY.md](GLOSSARY.md); the two hard-to-reverse decisions are in [docs/adr/](docs/adr/);
 the rest of the design is in [docs/2026-10-20-design-decisions.md](docs/2026-10-20-design-decisions.md).
 
@@ -62,15 +64,23 @@ Two files live at the repo root, because Claude Code sessions for this work star
 
    It uses the master key in `LITELLM_MASTER_KEY`, or the non-secret local default
    `sk-local-dev`.
+
+   **Keys:** the frontier alias needs `OPENROUTER_API_KEY`. Unless it's already exported,
+   `run_proxy.sh` takes that one variable from `problem_first_ai/.env` (`GATEWAY_ENV_FILE`
+   overrides the path) and never prints it. It also sets `LITELLM_MODE=PRODUCTION`: in its
+   default mode LiteLLM loads the first `.env` it finds above its install folder, which here is
+   that file, with every credential in it. Give the key a credit limit on OpenRouter, because
+   anything on this Mac that knows the master key can spend through the alias.
 5. **Validate:**
 
    ```bash
    uv run --frozen python validator/scripts/e2e_runner.py
    ```
 
-   It loads each alias's model (timing the load), makes an opening call, runs the cases, prints a
-   table, saves a JSON report under `runs/`, and exits 0 only when every case passes. In Claude Code, ask Claude to validate the local gateway and the skill runs this
-   and diagnoses any failure.
+   It loads each local alias's model (timing the load), makes an opening call to every alias, runs
+   the cases, prints a table, saves a JSON report under `runs/`, and exits 0 only when every case
+   passes. Each run makes a few paid calls to the frontier alias. In Claude Code, ask Claude to
+   validate the gateway and the skill runs this and diagnoses any failure.
 6. **Call it from code:** any OpenAI client works.
 
    ```python
@@ -88,9 +98,9 @@ Two files live at the repo root, because Claude Code sessions for this work star
   is this Mac, `cluster` your own NVIDIA hardware, `frontier` a vendor API), add cases for it
   to `cases.yaml`, run `./setup.sh` to pull the model, restart the gateway, then validate.
   Re-pointing an alias starts a new baseline ([ADR 0002](docs/adr/0002-an-alias-promises-a-role.md)).
-- **Add a frontier alias:** route it through OpenRouter (`model: openrouter/openai/gpt-6-luna`)
-  and reference its key as `api_key: os.environ/OPENROUTER_API_KEY`. Never write a key value into
-  a file.
+- **Add a frontier alias:** route it through OpenRouter, like `frontier-reasoning`, and reference
+  its key as `api_key: os.environ/OPENROUTER_API_KEY`. Never write a key value into a file. To
+  compare it with a local alias, list both under one case's `alias:` in `cases.yaml`.
 - **Upgrade LiteLLM:** change the pin and `exclude-newer` in `pyproject.toml` deliberately (keep
   a release at least 14 days old; releases 1.82.7 and 1.82.8 were compromised in March 2026),
   run `uv lock`, then validate.

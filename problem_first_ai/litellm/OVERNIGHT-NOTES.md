@@ -268,7 +268,7 @@ You accepted R3 (and moved the files), set R6's scope, and accepted everything e
 | N3 context drift | Done: the `context_mismatch` warning. Your note is recorded: `OLLAMA_MAX_LOADED_MODELS=1` was set when Ollama started |
 | N4 cold-call question | Answered by experiment, from the baseline note: a load within 2 s of an unload takes 5.1–6.4 s, one 5 s or more later about 0.8 s. The runner now waits 5 s. The cause is still a hypothesis |
 | N5 course compatibility | The case is added and passes (Responses API with `reasoning_effort: low`). Pointing Perplexia at the gateway is your coursework, which Claude can't write to; the snippet is below |
-| N6 frontier alias | **Needs you:** an OpenRouter key with a credit limit, exported as `OPENROUTER_API_KEY` in the gateway's window. This changed from `OPENAI_API_KEY` on 2026-10-21, because your OpenRouter budget covers the calls. The steps are in `recover_session_instructions.md`. Then Claude adds the alias and its cases |
+| N6 frontier alias | Built 2026-10-21: `frontier-reasoning` → `openrouter/openai/gpt-6-luna` (OpenRouter rather than OpenAI directly, because your OpenRouter budget covers the calls), and every case now runs on both aliases. `run_proxy.sh` takes only `OPENROUTER_API_KEY` from `problem_first_ai/.env` and sets `LITELLM_MODE=PRODUCTION`, because LiteLLM was otherwise loading that whole file by itself. **Needs you:** restart the gateway, then validate |
 | N7 vllm-metal | Deferred: it needs `brew install` and a model in a vLLM-loadable format. *Proposed:* start it in its own session with `/grill-with-docs` |
 | N8 three-model lineup | Future project |
 | N9 journal | Done: entry for 2026-10-21 (morning) |
