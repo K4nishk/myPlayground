@@ -3,7 +3,7 @@ title: Local Model Gateway — Plan (2026-10-20)
 type: synthesis
 status: active
 tags: [litellm, gateway, ollama, open-weight, routing, sovereign-ai]
-sources: [raw/inbox/2026-10-20-local-model-gateway-decisions.md, raw/story-updates/2026-10-21-local-model-gateway-baseline.md, problem_first_ai/litellm/JOURNAL.md, raw/story-updates/2026-10-21-openrouter-alias-first-runs.md]
+sources: [raw/inbox/2026-10-20-local-model-gateway-decisions.md, raw/story-updates/2026-10-21-local-model-gateway-baseline.md, problem_first_ai/litellm/JOURNAL.md, raw/story-updates/2026-10-21-openrouter-alias-first-runs.md, problem_first_ai/litellm/docs/2026-10-20-design-decisions.md, problem_first_ai/litellm/docs/2026-10-21-vllm-metal-decisions.md, problem_first_ai/litellm/docs/adr/0001-mac-is-the-dev-loop.md, problem_first_ai/litellm/docs/adr/0002-an-alias-promises-a-role.md, problem_first_ai/litellm/docs/adr/0003-openrouter-is-its-own-tier.md, problem_first_ai/litellm/docs/adr/0004-vllm-metal-from-pinned-wheels.md, problem_first_ai/litellm/docs/adr/0005-one-local-backend-at-a-time.md]
 related: [projects/06-sovereign-ai-engine.md, overview.md, concepts/cold-starts.md, concepts/llm-evaluation.md]
 updated: 2026-10-21
 ---
@@ -71,6 +71,12 @@ numbers can be cited here.
   - An end-to-end validator skill that every later change must pass.
 - **`deepseek-r1:14b` cannot call tools.** Its Ollama prompt template has no tools section. It can
   serve Assignment 1's query-understanding part, but not the tool or ReAct parts.
+
+  > **Conflict (2026-10-21):** `ollama show deepseek-r1:14b` now lists the capabilities `tools,
+  > thinking, completion`, and its template renders `tool_calls`
+  > ([vLLM-on-Metal decisions](../../problem_first_ai/litellm/docs/2026-10-21-vllm-metal-decisions.md#conflicts)),
+  > against the 2026-10-20 decisions note above. Whether the model calls tools reliably is
+  > untested; settling it needs its own session.
 - **Supply chain.** LiteLLM is pinned to an exact version with a lockfile: 1.103.3, the newest
   release at least 14 days old. The note's reason is that releases 1.82.7 and 1.82.8 were
   compromised on PyPI in March 2026.
@@ -155,7 +161,7 @@ and on a context window that differs from the config. Learnings are kept in the 
 - **Planned:** compare the same role across the tiers: the frontier (a vendor API called
   directly), this Mac, and Kubernetes-hosted containers on your own NVIDIA GPUs. Until a direct key
   exists, `openrouter-reasoning` stands in for the frontier, with its hop noted. On the Mac, the
-  vLLM path is vllm-metal.
+  vLLM path is vllm-metal ([below](#planned-vllm-on-this-mac)).
 - **Next:** a run with no warnings, for the first local-vs-OpenRouter baseline.
 - **Planned:** capture resource utilization even on owned hardware. Scaling up GPUs means a cloud
   bill, with your own hardware as the fallback. So project 06's
@@ -167,6 +173,45 @@ and on a context window that differs from the config. Learnings are kept in the 
   upstreams, as best effort ([journal](../../problem_first_ai/litellm/JOURNAL.md)).
 - **Planned:** point Assignment 1's query-understanding part at `local-reasoning`. That's your
   coursework; the gateway side is proven by the course-compatibility case below.
+
+## Planned: vLLM on this Mac
+
+An *experiment* (the gateway glossary's term) comparing Ollama with vLLM through vllm-metal for
+the reasoning role. You decided it in a design session on 2026-10-21
+([decisions](../../problem_first_ai/litellm/docs/2026-10-21-vllm-metal-decisions.md)). Nothing is
+installed yet.
+
+- **A Candidate, not a re-point.** `local-reasoning-vllm-r1-14b-mlx4` serves
+  `mlx-community/DeepSeek-R1-Distill-Qwen-14B-4bit` (a pinned revision) on vLLM, while
+  `local-reasoning` stays on Ollama until the experiment closes. If the Candidate meets the bar,
+  the experiment's story update *proposes* a re-point, and you decide it.
+- **One local backend at a time**
+  ([ADR 0005](../../problem_first_ai/litellm/docs/adr/0005-one-local-backend-at-a-time.md)). 18 GB
+  can't hold two 14B models, and a vLLM server holds its weights until it stops. So the Candidate
+  runs from its own config in `experiments/2026-10-vllm-metal/`.
+- **A pinned install**
+  ([ADR 0004](../../problem_first_ai/litellm/docs/adr/0004-vllm-metal-from-pinned-wheels.md)):
+  vllm-metal v0.30.0 with vLLM 0.30.0, on Python 3.12, in its own uv project. Neither
+  `install.sh` nor brew meets the supply-chain rule.
+- **The fairness caveat.** It's the same distill, but MLX 4-bit, about 4.5 bits per weight,
+  against Q4_K_M at about 4.9 (*illustrative*: file size ÷ parameters). So the comparison is
+  pass rate and tokens/s, not identical answers. The fallback is the R1-0528 Qwen3-8B distill
+  on both backends.
+- **Footprint** (a new glossary term) is memory measured the same way on both backends: the
+  change in wired memory from `vm_stat`. It's trusted only if, on the Ollama runs, it's within
+  10% of Ollama's own `/api/ps` figure.
+- ***Proposed:* the bar.** 4/4 cases in all three runs; thinking kept out of every answer;
+  tokens/s no more than 10% below fresh Ollama runs; a footprint no more than 1 GiB above
+  Ollama's. The bar is "not slower" because the gain is running the same server the cluster will
+  ([ADR 0001](../../problem_first_ai/litellm/docs/adr/0001-mac-is-the-dev-loop.md)).
+- **The gateway's behaviour, read from the pinned source:**
+  - `hosted_vllm` sends Responses API calls to vLLM's own `/v1/responses`, whereas Ollama's go
+    through LiteLLM's conversion to Chat Completions.
+  - `reasoning_effort` is accepted on both backends but doesn't reduce the R1 distill's thinking.
+- **Order of work:** the runner's vLLM backend (test-first) → the backend project and install →
+  the experiment's config → a runbook and a wizard script → a measurement session.
+- **Risks:** no reports of vllm-metal on macOS 15.1.1; the `deepseek_r1` reasoning parser
+  untested on Metal; little memory to spare.
 
 ## Where it meets project 06
 
@@ -183,4 +228,6 @@ candidates get their own aliases later. The `Conflict` callout on the
 - [OpenRouter alias: first runs (2026-10-21)](../../raw/story-updates/2026-10-21-openrouter-alias-first-runs.md): the OpenRouter alias's figures, and the local runs beside it.
 - [`problem_first_ai/litellm/JOURNAL.md`](../../problem_first_ai/litellm/JOURNAL.md): what the build taught, under the course journal's section names.
 - [`problem_first_ai/litellm/GLOSSARY.md`](../../problem_first_ai/litellm/GLOSSARY.md): term definitions.
-- [`problem_first_ai/litellm/docs/adr/`](../../problem_first_ai/litellm/docs/adr/): ADR 0001 (the Mac is the dev loop), ADR 0002 (an alias promises a role) and ADR 0003 (OpenRouter is its own tier).
+- [`problem_first_ai/litellm/docs/adr/`](../../problem_first_ai/litellm/docs/adr/): ADR 0001 (the Mac is the dev loop), ADR 0002 (an alias promises a role), ADR 0003 (OpenRouter is its own tier), ADR 0004 (vllm-metal from pinned wheels) and ADR 0005 (one local backend at a time).
+- [vLLM on Metal — design decisions (2026-10-21)](../../problem_first_ai/litellm/docs/2026-10-21-vllm-metal-decisions.md): the Planned vLLM experiment and the tools Conflict.
+- [Design decisions (2026-10-20), watched original](../../problem_first_ai/litellm/docs/2026-10-20-design-decisions.md): the same decisions as the `raw/inbox/` copy, plus the tools Conflict callout.

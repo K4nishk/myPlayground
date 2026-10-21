@@ -3,3 +3,5 @@
 problem_first_ai/*.ipynb
 problem_first_ai/preread/*.ipynb
 problem_first_ai/litellm/JOURNAL.md
+problem_first_ai/litellm/docs/*.md
+problem_first_ai/litellm/docs/adr/*.md

@@ -48,4 +48,4 @@ Answers to queries worth keeping land in `synthesis/` and are listed here.
 
 | Page | Summary | Status | Updated |
 |---|---|---|---|
-| [Local model gateway plan (2026-10-20)](synthesis/2026-10-20-local-model-gateway-plan.md) | LiteLLM front door with local / cluster / openrouter / frontier tiers; aliases promise a role; Mac is the dev loop. First slice measured: 4/4 cases, about 14.8 tok/s, 8.23 GiB on the GPU, no swap. OpenRouter alias (gpt-6-luna) shares the cases; first runs not yet a baseline | active | 2026-10-21 |
+| [Local model gateway plan (2026-10-20)](synthesis/2026-10-20-local-model-gateway-plan.md) | LiteLLM front door with local / cluster / openrouter / frontier tiers; aliases promise a role; Mac is the dev loop. First slice measured: 4/4 cases, about 14.8 tok/s, 8.23 GiB on the GPU, no swap. OpenRouter alias (gpt-6-luna) shares the cases; first runs not yet a baseline. vLLM-on-Metal experiment Planned (a Candidate alias, one local backend at a time) | active | 2026-10-21 |

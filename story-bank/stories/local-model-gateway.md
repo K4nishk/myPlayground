@@ -79,7 +79,9 @@ This isn't a baseline: macOS swapped during three of the four runs.
 - A local-vs-OpenRouter baseline: needs a run with no warnings.
 - A `frontier-*` alias for a vendor API called directly, once a direct key with credits exists.
 - `seed` for the OpenRouter alias, which is best effort and untried.
-- vllm-metal as the Mac's backend: a re-pointed alias and a new baseline.
+- vllm-metal on the Mac: *Planned* as an experiment, with a Candidate alias run against the
+  Ollama baseline (decided 2026-10-21). `local-reasoning` is re-pointed only if the Candidate
+  meets the bar and you decide to.
 - Why loads straight after an unload, or after Ollama's own idle unload, are slow: untested
   hypotheses only.
 
@@ -87,3 +89,5 @@ This isn't a baseline: macOS swapped during three of the four runs.
 - 2026-10-21 — First draft, from the baseline note and the project journal.
 - 2026-10-21 — Synced with the OpenRouter first-runs note and the journal's afternoon entry: the
   second backend, the three hidden defaults, and results labelled as not a baseline.
+- 2026-10-21 — Synced with the vLLM-on-Metal decisions: the vllm-metal thread is now a
+  *Planned* experiment with a Candidate, not a re-point. No new results.

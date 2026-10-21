@@ -52,3 +52,19 @@ python3 labs/sovereign-ai/crossover.py --example    # crossover calculator
 
 `ingest` · `query` · `lint` · `heal` · `story` — in `.claude/skills/`. Each
 mirrors an operation in WIKI_SCHEMA.md.
+
+## Agent skills
+
+### Issue tracker
+
+GitHub Issues on `K4nishk/myPlayground`. This repo is the exception to the global
+Linear/KCH rule. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+The five default labels: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`,
+`wontfix`. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Multi-context: `GLOSSARY-MAP.md` lists each project's glossary and ADRs. See `docs/agents/domain.md`.

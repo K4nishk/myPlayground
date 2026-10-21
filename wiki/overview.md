@@ -96,7 +96,8 @@ API at about 14.8 tokens/s, using 8.23 GiB of GPU memory with no swapping
 runs. Those aren't a baseline yet, because macOS swapped
 ([first-runs note](../raw/story-updates/2026-10-21-openrouter-alias-first-runs.md)). The track's
 plan conflicts with the stack 06 assumed; see the callout on the
-[project 06 page](projects/06-sovereign-ai-engine.md).
+[project 06 page](projects/06-sovereign-ai-engine.md). Next on the Mac is an experiment comparing Ollama with
+vLLM through vllm-metal (*Planned*; [plan](synthesis/2026-10-20-local-model-gateway-plan.md#planned-vllm-on-this-mac)).
 
 ## Where things stand (2026-10-18)
 
