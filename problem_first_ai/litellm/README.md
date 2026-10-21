@@ -88,8 +88,9 @@ Two files live at the repo root, because Claude Code sessions for this work star
   is this Mac, `cluster` your own NVIDIA hardware, `frontier` a vendor API), add cases for it
   to `cases.yaml`, run `./setup.sh` to pull the model, restart the gateway, then validate.
   Re-pointing an alias starts a new baseline ([ADR 0002](docs/adr/0002-an-alias-promises-a-role.md)).
-- **Add a frontier alias:** reference its key as `api_key: os.environ/OPENAI_API_KEY`. Never
-  write a key value into a file.
+- **Add a frontier alias:** route it through OpenRouter (`model: openrouter/openai/gpt-6-luna`)
+  and reference its key as `api_key: os.environ/OPENROUTER_API_KEY`. Never write a key value into
+  a file.
 - **Upgrade LiteLLM:** change the pin and `exclude-newer` in `pyproject.toml` deliberately (keep
   a release at least 14 days old; releases 1.82.7 and 1.82.8 were compromised in March 2026),
   run `uv lock`, then validate.

@@ -232,9 +232,9 @@ All *Proposed*. Each is a change to the setup around Claude, not to the gateway.
 - **N5. Course compatibility.** Point Perplexia's Part 1 (query classification) at
   `local-reasoning` through `base_url`, and add a course-compatibility case to `cases.yaml`
   (Responses API plus `reasoning_effort`). Parts 2–3 need a tools-capable alias.
-- **N6. A frontier alias.** Add `frontier-reasoning` → `gpt-6-luna`, reading `OPENAI_API_KEY`
-  from the environment, and run the same cases. That's the first frontier-vs-local comparison
-  for project 06, phase 1.
+- **N6. A frontier alias.** Add `frontier-reasoning` → `gpt-6-luna` through OpenRouter, reading
+  `OPENROUTER_API_KEY` from the environment (it was `OPENAI_API_KEY` until 2026-10-21), and run
+  the same cases. That's the first frontier-vs-local comparison for project 06, phase 1.
 - **N7. vllm-metal on this Mac.** Re-point `local-reasoning` (a new baseline under ADR 0002),
   and add a vLLM backend probe (`/health`, served models) to the runner.
 - **N8. The three-model lineup and the cluster tier** go in a future project on other
@@ -268,7 +268,7 @@ You accepted R3 (and moved the files), set R6's scope, and accepted everything e
 | N3 context drift | Done: the `context_mismatch` warning. Your note is recorded: `OLLAMA_MAX_LOADED_MODELS=1` was set when Ollama started |
 | N4 cold-call question | Answered by experiment, from the baseline note: a load within 2 s of an unload takes 5.1–6.4 s, one 5 s or more later about 0.8 s. The runner now waits 5 s. The cause is still a hypothesis |
 | N5 course compatibility | The case is added and passes (Responses API with `reasoning_effort: low`). Pointing Perplexia at the gateway is your coursework, which Claude can't write to; the snippet is below |
-| N6 frontier alias | **Needs you:** `OPENAI_API_KEY` in the gateway's environment, and your OK to spend on `gpt-6-luna` calls |
+| N6 frontier alias | **Needs you:** an OpenRouter key with a credit limit, exported as `OPENROUTER_API_KEY` in the gateway's window. This changed from `OPENAI_API_KEY` on 2026-10-21, because your OpenRouter budget covers the calls. The steps are in `recover_session_instructions.md`. Then Claude adds the alias and its cases |
 | N7 vllm-metal | Deferred: it needs `brew install` and a model in a vLLM-loadable format. *Proposed:* start it in its own session with `/grill-with-docs` |
 | N8 three-model lineup | Future project |
 | N9 journal | Done: entry for 2026-10-21 (morning) |
