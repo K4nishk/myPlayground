@@ -20,8 +20,8 @@ The job an alias is for: reasoning, text or coding.
 _Avoid_: model type, capability
 
 **Tier**:
-Where an alias's backend model runs: `local` is this Mac, `cluster` is Kubernetes on your own NVIDIA hardware, `frontier` is a vendor API.
-_Avoid_: provider, location, "local" for the NVIDIA hardware
+Where an alias's backend model runs and how the gateway reaches it: `local` is this Mac, `cluster` is Kubernetes on your own NVIDIA hardware, `openrouter` is a vendor's model reached through OpenRouter, `frontier` is a vendor API called directly.
+_Avoid_: provider, location, "local" for the NVIDIA hardware, "frontier" for a model reached through OpenRouter
 
 **Candidate**:
 An alias pinned to one backend model for an experiment, and never re-pointed.
@@ -66,7 +66,7 @@ Bringing a backend model into memory so it becomes resident.
 _Avoid_: warm-up, cold start
 
 **Opening call**:
-The first call to an alias in a run, made once its model is resident (on a frontier API, where residency can't be seen, straight away) and before its cases.
+The first call to an alias in a run, made once its model is resident (on a vendor API, where residency can't be seen, straight away) and before its cases.
 _Avoid_: warm-up call, first call, start call
 
 **Cold call**:

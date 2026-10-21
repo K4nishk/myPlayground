@@ -29,12 +29,12 @@ alias_settings:
   # gpt-6-luna takes no temperature through OpenRouter (none of its endpoints lists one), and the
   # gateway refuses temperature 0 for it on the Responses API, even at reasoning effort "none". So
   # it runs at its default, and its answers can vary between runs.
-  frontier-reasoning:
+  openrouter-reasoning:
     temperature: null
 
 cases:
   - id: reasoning-arithmetic
-    alias: [local-reasoning, frontier-reasoning]
+    alias: [local-reasoning, openrouter-reasoning]
     api: chat
     prompt: What is 17 × 23? Reply with the number only.
     output_budget: 2048
@@ -42,7 +42,7 @@ cases:
       - {type: exact_numeric, expected: 391}
 
   - id: reasoning-riddle
-    alias: [local-reasoning, frontier-reasoning]
+    alias: [local-reasoning, openrouter-reasoning]
     api: chat
     prompt: Which weighs more, a kilogram of feathers or a kilogram of steel? Answer in one sentence.
     output_budget: 2048
@@ -50,7 +50,7 @@ cases:
       - {type: contains, expected: [same, equal, neither]}
 
   - id: reasoning-responses-api
-    alias: [local-reasoning, frontier-reasoning]
+    alias: [local-reasoning, openrouter-reasoning]
     api: responses
     prompt: What is 12 + 30? Reply with the number only.
     output_budget: 2048
@@ -59,7 +59,7 @@ cases:
 
   # The course app's call settings: the Responses API with reasoning_effort "low".
   - id: course-compat-responses
-    alias: [local-reasoning, frontier-reasoning]
+    alias: [local-reasoning, openrouter-reasoning]
     api: responses
     reasoning_effort: low
     prompt: A train travels 240 km in 3 hours. What is its average speed in km/h? Reply with the number only.

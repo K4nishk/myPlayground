@@ -39,6 +39,9 @@ Terms are defined in [`GLOSSARY.md`](../GLOSSARY.md); the two hard-to-reverse de
   2026-10-21: it goes through OpenRouter (`openrouter/openai/gpt-6-luna`) and reads
   `OPENROUTER_API_KEY`, because the OpenRouter account has the budget for these calls. Its
   latencies will include OpenRouter's hop, which matters when comparing it with the local tiers.
+  Later the same day it was renamed `openrouter-reasoning`: OpenRouter is its own tier, and
+  `frontier-*` waits for a vendor API called directly with its own key
+  ([ADR 0003](adr/0003-openrouter-is-its-own-tier.md)).
 - Keep journaling learnings in `problem_first_ai/litellm/JOURNAL.md` as later projects build on
   this one.
 

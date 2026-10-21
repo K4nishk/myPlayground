@@ -489,11 +489,11 @@ class CaseCoverage(RunnerTestCase):
         self.assertIn("nobody", proc.stderr)
 
 
-FRONTIER_ROUTE = "openrouter/openai/gpt-test"
+OPENROUTER_ROUTE = "openrouter/openai/gpt-test"
 
 
 class TwoAliases(RunnerTestCase):
-    """A local alias and a frontier alias sharing one case."""
+    """A local alias and an openrouter alias sharing one case."""
 
     def setUp(self):
         super().setUp()
@@ -501,60 +501,60 @@ class TwoAliases(RunnerTestCase):
             model_list:
               - model_name: local-reasoning
                 litellm_params: {{model: ollama_chat/{MODEL}, api_base: "{self.ollama.url}", num_ctx: 4096}}
-              - model_name: frontier-reasoning
-                litellm_params: {{model: {FRONTIER_ROUTE}, api_key: os.environ/OPENROUTER_API_KEY}}
+              - model_name: openrouter-reasoning
+                litellm_params: {{model: {OPENROUTER_ROUTE}, api_key: os.environ/OPENROUTER_API_KEY}}
             """))
         self.write_cases("""\
             cases:
               - id: arithmetic
-                alias: [local-reasoning, frontier-reasoning]
+                alias: [local-reasoning, openrouter-reasoning]
                 api: chat
                 prompt: What is 17 × 23? Reply with the number only.
                 output_budget: 2048
                 checks:
                   - {type: exact_numeric, expected: 391}
             """)
-        self.gateway.aliases = ["local-reasoning", "frontier-reasoning"]
-        self.gateway.routes = {"frontier-reasoning": FRONTIER_ROUTE}
+        self.gateway.aliases = ["local-reasoning", "openrouter-reasoning"]
+        self.gateway.routes = {"openrouter-reasoning": OPENROUTER_ROUTE}
 
 
-class FrontierAlias(TwoAliases):
-    """A frontier alias runs on a vendor API the runner can't probe: there is no load to time, but it
+class OpenRouterAlias(TwoAliases):
+    """An openrouter alias runs on a vendor API the runner can't probe: there is no load to time, but it
     still gets an opening call, its routing is checked from the gateway's header, and it can share
     cases with a local alias so both answer the same prompts."""
 
-    def frontier_row(self, report):
-        return next(a for a in report["aliases"] if a["alias"] == "frontier-reasoning")
+    def openrouter_row(self, report):
+        return next(a for a in report["aliases"] if a["alias"] == "openrouter-reasoning")
 
     def test_a_case_naming_several_aliases_runs_once_for_each(self):
         proc, report = self.run_runner()
         self.assertEqual(proc.returncode, 0, proc.stderr)
         self.assertEqual([(c["id"], c["alias"]) for c in report["cases"]],
-                         [("arithmetic", "local-reasoning"), ("arithmetic", "frontier-reasoning")])
+                         [("arithmetic", "local-reasoning"), ("arithmetic", "openrouter-reasoning")])
 
     def test_it_gets_an_opening_call_but_no_load(self):
         proc, report = self.run_runner()
-        row = self.frontier_row(report)
+        row = self.openrouter_row(report)
         self.assertIsNotNone(row["opening_call_s"])
         self.assertIsNone(row["load_s"])
-        frontier_posts = [r for r in self.gateway.requests
-                          if r[0] == "POST" and r[2].get("model") == "frontier-reasoning"]
-        self.assertEqual(len(frontier_posts), 2)  # the opening call, then the case
+        openrouter_posts = [r for r in self.gateway.requests
+                          if r[0] == "POST" and r[2].get("model") == "openrouter-reasoning"]
+        self.assertEqual(len(openrouter_posts), 2)  # the opening call, then the case
         self.assertEqual([r for r in self.ollama.requests if r[1] == "/api/generate" and r[2]["model"] != MODEL], [])
 
     def test_the_table_says_there_was_no_load_to_time(self):
         proc, _ = self.run_runner(json_output=False)
-        line = next(l for l in proc.stdout.splitlines() if l.strip().startswith("frontier-reasoning ->"))
+        line = next(l for l in proc.stdout.splitlines() if l.strip().startswith("openrouter-reasoning ->"))
         self.assertIn("no load to time", line)
         self.assertIn("opening call", line)
 
     def test_the_gateway_sending_it_to_another_model_is_a_misroute(self):
-        self.gateway.routes = {"frontier-reasoning": "openrouter/openai/gpt-other"}
+        self.gateway.routes = {"openrouter-reasoning": "openrouter/openai/gpt-other"}
         proc, report = self.run_runner()
         self.assertEqual(proc.returncode, 1)
         self.assertIn("misroute", [f["kind"] for f in report["failures"]])  # from the opening call
-        frontier_case = next(c for c in report["cases"] if c["alias"] == "frontier-reasoning")
-        self.assertEqual(frontier_case["failure"], "misroute")
+        openrouter_case = next(c for c in report["cases"] if c["alias"] == "openrouter-reasoning")
+        self.assertEqual(openrouter_case["failure"], "misroute")
 
 
 class AliasSettings(TwoAliases):
@@ -567,16 +567,16 @@ class AliasSettings(TwoAliases):
     def test_every_call_is_sent_at_temperature_zero_by_default(self):
         proc, report = self.run_runner()
         self.assertEqual(proc.returncode, 0, proc.stderr)
-        for alias in ("local-reasoning", "frontier-reasoning"):
+        for alias in ("local-reasoning", "openrouter-reasoning"):
             self.assertEqual([b.get("temperature") for b in self.bodies(alias)], [0, 0])  # opening call, case
 
     def test_an_alias_set_to_temperature_null_is_sent_no_temperature(self):
         self.write_cases("""\
             alias_settings:
-              frontier-reasoning: {temperature: null}
+              openrouter-reasoning: {temperature: null}
             cases:
               - id: sum
-                alias: [local-reasoning, frontier-reasoning]
+                alias: [local-reasoning, openrouter-reasoning]
                 api: responses
                 prompt: What is 12 + 30? Reply with the number only.
                 output_budget: 2048
@@ -585,19 +585,19 @@ class AliasSettings(TwoAliases):
             """)
         proc, report = self.run_runner()
         self.assertEqual(proc.returncode, 0, proc.stderr)
-        frontier_bodies = self.bodies("frontier-reasoning")
-        self.assertEqual(len(frontier_bodies), 2)
-        self.assertTrue(all("temperature" not in b for b in frontier_bodies), frontier_bodies)
+        openrouter_bodies = self.bodies("openrouter-reasoning")
+        self.assertEqual(len(openrouter_bodies), 2)
+        self.assertTrue(all("temperature" not in b for b in openrouter_bodies), openrouter_bodies)
         self.assertEqual([b.get("temperature") for b in self.bodies("local-reasoning")], [0, 0])
         self.assertEqual({c["alias"]: c["temperature"] for c in report["cases"]},
-                         {"local-reasoning": 0, "frontier-reasoning": None})
+                         {"local-reasoning": 0, "openrouter-reasoning": None})
 
     def test_settings_for_an_alias_the_config_lacks_are_a_config_error(self):
         self.write_cases("""\
             alias_settings:
               local-text: {temperature: null}
             cases:
-              - {id: a, alias: [local-reasoning, frontier-reasoning], api: chat, prompt: hi, output_budget: 16,
+              - {id: a, alias: [local-reasoning, openrouter-reasoning], api: chat, prompt: hi, output_budget: 16,
                  checks: [{type: contains, expected: hi}]}
             """)
         proc, report = self.run_runner()
@@ -608,9 +608,9 @@ class AliasSettings(TwoAliases):
     def test_an_unknown_alias_setting_is_a_config_error(self):
         self.write_cases("""\
             alias_settings:
-              frontier-reasoning: {temprature: null}
+              openrouter-reasoning: {temprature: null}
             cases:
-              - {id: a, alias: [local-reasoning, frontier-reasoning], api: chat, prompt: hi, output_budget: 16,
+              - {id: a, alias: [local-reasoning, openrouter-reasoning], api: chat, prompt: hi, output_budget: 16,
                  checks: [{type: contains, expected: hi}]}
             """)
         proc, report = self.run_runner()

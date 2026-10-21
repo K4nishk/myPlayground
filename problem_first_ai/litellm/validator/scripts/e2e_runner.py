@@ -402,7 +402,7 @@ def open_alias(client: OpenAI, alias: Alias, backend: OllamaBackend | None, args
                row: dict) -> None:
     """Load the alias's model on its backend (timed as load_s), then make the opening call through the gateway.
 
-    The load is skipped for backends that can't report what is resident (a frontier API), since a load
+    The load is skipped for backends that can't report what is resident (a vendor API), since a load
     can't be told from a warm call there. The opening call still runs, so connection setup stays out of
     the first case's latency.
     """
@@ -553,7 +553,7 @@ def fmt(value: Any, unit: str = "", none: str = "-") -> str:
 def describe_alias(a: dict) -> str:
     if a["cold"] is None and a["opening_call_s"] is None:
         start = "not opened"
-    elif a["cold"] is None:  # a backend that can't report what is resident, such as a frontier API
+    elif a["cold"] is None:  # a backend that can't report what is resident, such as a vendor API
         start = f"no load to time, opening call {fmt(a['opening_call_s'], ' s')}"
     elif a["cold"]:
         before = "was loaded, unloaded first" if a["loaded_before_run"] else "wasn't loaded"

@@ -23,7 +23,7 @@ if ! command -v uv >/dev/null 2>&1; then
   exit 1
 fi
 
-# Frontier aliases read OPENROUTER_API_KEY. Unless it's already exported, take that one variable,
+# OpenRouter aliases read OPENROUTER_API_KEY. Unless it's already exported, take that one variable,
 # and nothing else, from the course's .env (GATEWAY_ENV_FILE overrides the path). Never printed.
 env_file="${GATEWAY_ENV_FILE:-../.env}"
 if [ -z "${OPENROUTER_API_KEY:-}" ] && [ -f "$env_file" ]; then
@@ -34,7 +34,7 @@ if [ -z "${OPENROUTER_API_KEY:-}" ] && [ -f "$env_file" ]; then
 fi
 key_warning=""
 if [ -z "${OPENROUTER_API_KEY:-}" ]; then
-  key_warning="WARNING: OPENROUTER_API_KEY is neither exported nor in $env_file, so frontier aliases will fail."
+  key_warning="WARNING: OPENROUTER_API_KEY is neither exported nor in $env_file, so openrouter aliases will fail."
 fi
 
 if (exec 3<>/dev/tcp/127.0.0.1/4000) 2>/dev/null; then
