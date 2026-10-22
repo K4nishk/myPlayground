@@ -63,3 +63,30 @@ python3 -m unittest discover -s tests         # tooling + calculator tests
 python3 labs/sovereign-ai/crossover.py --example
 cd labs/langgraph-two-call && pip install -r requirements.txt && python -m unittest test_two_call
 ```
+
+## Checks and CI
+
+`tools/check.sh` runs every check: the brain lint, the tooling tests, the docs checks (no two
+ADRs sharing a number, the gateway docs using its glossary's words) and the gateway's tests. The
+pre-commit hook runs the checks for what's staged; turn it on once per clone with
+`git config core.hooksPath .githooks`. CI runs every check on each push and pull request.
+
+Reading CI results:
+
+- **Claude reads the status** from GitHub's public API with `curl`, since the repo is public:
+
+  ```bash
+  curl -s 'https://api.github.com/repos/K4nishk/myPlayground/actions/runs?branch=sandbox&per_page=3' \
+    | jq -r '.workflow_runs[] | [.head_sha[0:7], .status, .conclusion] | @tsv'
+  ```
+
+  `gh` doesn't work inside Claude's sandbox: a Go program there can't verify TLS certificates
+  (`x509: OSStatus -26276`, seen 2026-10-21).
+- **You read the logs.** GitHub serves step logs only to signed-in users, so this part is on
+  your end. Type these in Claude's prompt (the `!` runs them in your own shell, and the output
+  lands in the conversation), or open the repo's Actions tab:
+
+  ```bash
+  ! gh run list --repo K4nishk/myPlayground --branch sandbox --limit 3
+  ! gh run view <run id> --repo K4nishk/myPlayground --log-failed
+  ```

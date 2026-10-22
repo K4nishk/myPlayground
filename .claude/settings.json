@@ -9,6 +9,17 @@
           }
         ]
       }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.command // empty' | awk 'NF {print; exit}' | grep -Eq '^[[:space:]]*cd([[:space:]]|$)' && { echo 'Blocked by a PreToolUse hook: this command starts with cd, which moves the working directory for the rest of the session. Use absolute paths, git -C <dir>, uv --project <dir>, or a subshell such as ( cd <dir> && ... ).' >&2; exit 2; } || exit 0"
+          }
+        ]
+      }
     ]
   },
   "permissions": {

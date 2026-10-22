@@ -108,11 +108,15 @@ Two files live at the repo root, because Claude Code sessions for this work star
   so it can't be re-pointed without being renamed. A candidate on a backend that is usually off
   gets its own config and cases under `experiments/`, not a place in `litellm_config.yaml`
   ([ADR 0005](docs/adr/0005-one-local-backend-at-a-time.md)).
-- **Add an OpenRouter alias:** name it `openrouter-<role>`, like `openrouter-reasoning`, and
+- **Add an OpenRouter alias:** first read the model's `supported_parameters` at
+  `https://openrouter.ai/api/v1/models/<model id>/endpoints`, for every upstream listed. Name the
+  alias `openrouter-<role>`, like `openrouter-reasoning`, and
   reference its key as `api_key: os.environ/OPENROUTER_API_KEY`. Never write a key value into a
   file. To compare it with a local alias, list both under one case's `alias:` in `cases.yaml`.
-  If its model refuses a temperature, give the alias `temperature: null` under `alias_settings`
+  If `temperature` isn't in that list, give the alias `temperature: null` under `alias_settings`
   in `cases.yaml`, as `openrouter-reasoning` has; otherwise the validator sends temperature 0.
+- **Record a change of plan when it's decided,** in the dated decisions doc under `docs/`.
+  `/code-review` reads that doc as the spec for the change.
 - **Add a frontier alias** (*Planned*): a vendor API called directly with that vendor's own key,
   for example `api_key: os.environ/OPENAI_API_KEY`, so its timings have no aggregator in them
   ([ADR 0003](docs/adr/0003-openrouter-is-its-own-tier.md)).
