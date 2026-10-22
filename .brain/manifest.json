@@ -1,7 +1,35 @@
 {
   "sources": {
     "problem_first_ai/litellm/JOURNAL.md": {
-      "sha256": "d4d4f69216bcd4650ba72b54e1310ca72133b9542bacae17c8d6fae9cbbcd315",
+      "sha256": "628591d26b27e3011829f6bb172e0d8242cdc4c94544b46992892685203d753e",
+      "ingested": "2026-10-21"
+    },
+    "problem_first_ai/litellm/docs/2026-10-20-design-decisions.md": {
+      "sha256": "b1b0eddbb4f82728e010229aec46fac6aecf9f391841fc90751291459acd6612",
+      "ingested": "2026-10-21"
+    },
+    "problem_first_ai/litellm/docs/2026-10-21-vllm-metal-decisions.md": {
+      "sha256": "21766b882e031f6cd71cd3f7e7fc7efde08d1c3587433b43a7da3b22e1c4f265",
+      "ingested": "2026-10-21"
+    },
+    "problem_first_ai/litellm/docs/adr/0001-mac-is-the-dev-loop.md": {
+      "sha256": "ae879fd24a25b28c7aa6747c1f60b4c5c363b7d02a089c010797d1890f821e79",
+      "ingested": "2026-10-21"
+    },
+    "problem_first_ai/litellm/docs/adr/0002-an-alias-promises-a-role.md": {
+      "sha256": "0c292afbb8297c3687b8d4cc3e1dc801fbb506bd7b6a8fb3f8e66339c3c7f219",
+      "ingested": "2026-10-21"
+    },
+    "problem_first_ai/litellm/docs/adr/0003-openrouter-is-its-own-tier.md": {
+      "sha256": "601b195794c004005413d370761fdd174feae2a1d8b7a34c06aec7dca0d63af2",
+      "ingested": "2026-10-21"
+    },
+    "problem_first_ai/litellm/docs/adr/0004-vllm-metal-from-pinned-wheels.md": {
+      "sha256": "407359afe918396cedc25bc973aaaeaf659deab3c10cafa78f56d8f3e01dd3e1",
+      "ingested": "2026-10-21"
+    },
+    "problem_first_ai/litellm/docs/adr/0005-one-local-backend-at-a-time.md": {
+      "sha256": "3e1c955351edb18ff8ee0f97db715bf3224426319e913b677f4a8df0525f9f52",
       "ingested": "2026-10-21"
     },
     "problem_first_ai/preread/LangChain_LangGraph_Demo.ipynb": {
@@ -22,6 +50,10 @@
     },
     "raw/story-updates/2026-10-21-local-model-gateway-baseline.md": {
       "sha256": "3a07f9a302118951d4605c95b36ea945fe61654eb0e2ba2e8d099d0714735181",
+      "ingested": "2026-10-21"
+    },
+    "raw/story-updates/2026-10-21-openrouter-alias-first-runs.md": {
+      "sha256": "766d5c979c06448260d6b07783676b03e6bb238a8232f32af797a8d11fbebd93",
       "ingested": "2026-10-21"
     }
   }

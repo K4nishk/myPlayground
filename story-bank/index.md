@@ -8,6 +8,6 @@
 | [Autoscaling GPU inference on the signal users actually feel](stories/kserve-gpu-autoscaling.md) | planned | [04](../wiki/projects/04-kserve-gpu-autoscaling.md) | 2026-10-18 | recovery time, GPU-hours |
 | [Scale-to-zero for GPU models with a cold-start budget](stories/keda-scale-to-zero.md) | planned | [05](../wiki/projects/05-keda-scale-to-zero.md) | 2026-10-18 | cold-start terms |
 | [When does running your own model beat renting a frontier API?](stories/sovereign-ai-engine.md) | planned | [06](../wiki/projects/06-sovereign-ai-engine.md) | 2026-10-21 | gap, latency, crossover |
-| [One front door to local and frontier models, with a test that proves every route](stories/local-model-gateway.md) | in-progress | [gateway plan](../wiki/synthesis/2026-10-20-local-model-gateway-plan.md) | 2026-10-21 | interview angle, frontier comparison |
+| [One front door to local and frontier models, with a test that proves every route](stories/local-model-gateway.md) | in-progress | [gateway plan](../wiki/synthesis/2026-10-20-local-model-gateway-plan.md) | 2026-10-21 | interview angle, local-vs-OpenRouter baseline, direct frontier alias |
 
 Template for new stories: [stories/_template.md](stories/_template.md).

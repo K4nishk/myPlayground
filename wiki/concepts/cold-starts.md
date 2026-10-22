@@ -3,7 +3,7 @@ title: Cold Starts
 type: concept
 status: draft
 tags: [autoscaling, latency, scale-to-zero, kubernetes]
-sources: [raw/roadmaps/2026-10-18-ai-infra-project-roadmap.md, raw/story-updates/2026-10-21-local-model-gateway-baseline.md]
+sources: [raw/roadmaps/2026-10-18-ai-infra-project-roadmap.md, raw/story-updates/2026-10-21-local-model-gateway-baseline.md, raw/story-updates/2026-10-21-openrouter-alias-first-runs.md]
 related: [concepts/gpu-scheduling.md, concepts/quantization.md, projects/05-keda-scale-to-zero.md, projects/04-kserve-gpu-autoscaling.md, synthesis/2026-10-20-local-model-gateway-plan.md]
 updated: 2026-10-21
 ---
@@ -41,8 +41,14 @@ This is term 3 (weight load) for `deepseek-r1:14b` under Ollama 0.40.6 on the M3
   back-to-back unload-and-reload is the wrong way to measure a cold start. The
   [validator](../synthesis/2026-10-20-local-model-gateway-plan.md) now waits 5 s.
 - **5.84 s** for one load after the model had been unloaded for hours.
-- **Unexplained so far:** both slow cases. The hypotheses are Ollama waiting for freed GPU memory
-  to be reported, and weights that had left the file cache. Both are untested.
+- **6.83–8.15 s at 8.83 GiB** for four loads later the same day, each after Ollama had unloaded
+  the idle model itself
+  ([OpenRouter first-runs note](../../raw/story-updates/2026-10-21-openrouter-alias-first-runs.md)).
+  The fast loads were at 8.23 GiB, so the slow ones also take more memory. Three of those four
+  runs swapped, so memory pressure may add to it.
+- **Unexplained so far:** all the slow cases. The hypotheses are Ollama waiting for freed GPU
+  memory to be reported, weights that had left the file cache, and memory pressure. All are
+  untested.
 
 ## Design implications
 
@@ -62,3 +68,4 @@ This is term 3 (weight load) for `deepseek-r1:14b` under Ollama 0.40.6 on the M3
 
 - [AI infra project roadmap](../../raw/roadmaps/2026-10-18-ai-infra-project-roadmap.md) — named as a core concept.
 - [Local model gateway baseline (2026-10-21)](../../raw/story-updates/2026-10-21-local-model-gateway-baseline.md) — the Ollama reload measurements.
+- [OpenRouter alias: first runs (2026-10-21)](../../raw/story-updates/2026-10-21-openrouter-alias-first-runs.md) — loads after Ollama's own idle unload.

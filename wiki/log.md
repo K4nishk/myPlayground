@@ -57,3 +57,15 @@ Recent activity: `grep "^## \[" wiki/log.md | tail -5`.
 
 ## [2026-10-21] ingest | Local model gateway baseline and journal
 - touched: synthesis/2026-10-20-local-model-gateway-plan, concepts/cold-starts, concepts/llm-evaluation, overview, index; story-bank/stories/local-model-gateway (new), story-bank/index
+
+## [2026-10-21] ingest | OpenRouter alias first runs and journal (2026-10-21 afternoon)
+- touched: synthesis/2026-10-20-local-model-gateway-plan (fourth tier with Conflict callout, OpenRouter first runs, key and alias settings), concepts/cold-starts (loads after Ollama's idle unload), concepts/llm-evaluation (settings a model can't take, failures hiding failures), overview (four tiers), projects/06-sovereign-ai-engine (frontier timings need a direct API), index; story-bank/stories/local-model-gateway (evidence, action, result, open threads), story-bank/index
+
+## [2026-10-21] ingest | Local model gateway docs and ADRs; vLLM-on-Metal plan
+- touched: synthesis/2026-10-20-local-model-gateway-plan (Planned: vLLM on this Mac section; tools Conflict (2026-10-21) callout; sources + ADRs 0001-0005), overview (next on the Mac), index (plan row); story-bank/stories/local-model-gateway (open thread now a Planned experiment, changelog)
+
+## [2026-10-21] refactor | Agent skills setup and watched gateway docs
+- CLAUDE.md: Agent skills block (GitHub Issues, not Linear, for this repo; default triage labels; multi-context domain docs). New: GLOSSARY-MAP.md, docs/agents/{issue-tracker,triage-labels,domain}.md. .brain/watch.txt: + problem_first_ai/litellm/docs/*.md and docs/adr/*.md
+
+## [2026-10-21] heal | story refined: local-model-gateway
+- interview angle (2-minute STAR) approved and saved; changelog line

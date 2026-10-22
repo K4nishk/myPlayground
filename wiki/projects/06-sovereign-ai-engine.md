@@ -3,9 +3,9 @@ title: Sovereign AI Engine
 type: project
 status: draft
 tags: [open-weight, peft, lora, qlora, quantization, vllm, evaluation, cost]
-sources: [raw/roadmaps/2026-10-18-sovereign-ai-engine-blueprint.md, raw/roadmaps/2026-10-18-ai-infra-project-roadmap.md, raw/inbox/2026-10-20-local-model-gateway-decisions.md]
+sources: [raw/roadmaps/2026-10-18-sovereign-ai-engine-blueprint.md, raw/roadmaps/2026-10-18-ai-infra-project-roadmap.md, raw/inbox/2026-10-20-local-model-gateway-decisions.md, problem_first_ai/litellm/JOURNAL.md]
 related: [concepts/parameter-efficient-finetuning.md, concepts/quantization.md, concepts/continuous-batching.md, concepts/kv-cache.md, concepts/llm-evaluation.md, projects/02-k8s-vllm-serving.md, synthesis/2026-10-20-local-model-gateway-plan.md]
-updated: 2026-10-20
+updated: 2026-10-21
 ---
 
 # 06 — Sovereign AI Engine
@@ -104,6 +104,12 @@ recorded on the **owned cluster**
 ([gateway decisions](../../raw/inbox/2026-10-20-local-model-gateway-decisions.md),
 [plan](../synthesis/2026-10-20-local-model-gateway-plan.md)).
 
+**Frontier timings (2026-10-21).** For now the gateway reaches `gpt-6-luna` through OpenRouter.
+That adds a hop and a choice among upstreams, so its timings aren't frontier timings. 06's frontier
+latency baseline waits for a vendor API called directly
+([journal](../../problem_first_ai/litellm/JOURNAL.md),
+[ADR 0003](../../problem_first_ai/litellm/docs/adr/0003-openrouter-is-its-own-tier.md)).
+
 **Worked example — _illustrative_ numbers, not quotes or measurements:**
 1,000 input + 300 output tokens per request; API at $1.00 / $4.00 per million
 input/output tokens → $0.0022 per request. One GPU at $1.20/h → $876/month,
@@ -157,3 +163,4 @@ as a ready-made A/B harness between the API and the local model.
 - [Sovereign AI Engine blueprint — Aish's framework (2026-10-18)](../../raw/roadmaps/2026-10-18-sovereign-ai-engine-blueprint.md) — goal, baseline, three optimizations, metrics.
 - [AI infra project roadmap (2026-10-18)](../../raw/roadmaps/2026-10-18-ai-infra-project-roadmap.md) — position in the sequence.
 - [Local model gateway decisions (2026-10-20)](../../raw/inbox/2026-10-20-local-model-gateway-decisions.md) — the Mac as dev loop, crossover priced against cloud GPUs, the conflict above.
+- [Local model gateway journal](../../problem_first_ai/litellm/JOURNAL.md) — why OpenRouter timings are not frontier timings (2026-10-21).
