@@ -25,7 +25,7 @@ import time
 import urllib.error
 import urllib.request
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -67,6 +67,7 @@ class Alias:
     backend_model: str   # the model the backend serves, e.g. "deepseek-r1:14b"
     api_base: str
     num_ctx: int | None  # the context window the config asks for, if it sets one
+    temperature: float | None = 0  # sent with every call to the alias; None sends none (alias_settings)
 
     @property
     def route(self) -> str:
@@ -97,6 +98,26 @@ def load_aliases(path: str | Path) -> dict[str, Alias]:
                                              str(params.get("api_base", "")).rstrip("/"), num_ctx)
     if not aliases:
         raise ConfigError(f"{path}: model_list defines no aliases")
+    return aliases
+
+
+def apply_alias_settings(path: str | Path, aliases: dict[str, Alias]) -> dict[str, Alias]:
+    """Apply the cases file's alias_settings, which say how the runner calls an alias."""
+    data = yaml.safe_load(Path(path).read_text()) or {}
+    settings = data.get("alias_settings") or {}
+    if not isinstance(settings, dict):
+        raise ConfigError(f"{path}: alias_settings must map aliases to their settings")
+    aliases = dict(aliases)
+    for name, values in settings.items():
+        if name not in aliases:
+            raise ConfigError(f"{path}: alias_settings names {name!r}, which is not in the gateway config")
+        if not isinstance(values, dict) or set(values) - {"temperature"}:
+            raise ConfigError(f"{path}: alias_settings for {name!r} may only set temperature, got {values!r}")
+        temperature = values.get("temperature", 0)
+        # YAML's true and false load as bools, which Python also counts as ints.
+        if isinstance(temperature, bool) or not (temperature is None or isinstance(temperature, (int, float))):
+            raise ConfigError(f"{path}: alias_settings for {name!r}: temperature must be a number or null")
+        aliases[name] = replace(aliases[name], temperature=temperature)
     return aliases
 
 
@@ -249,11 +270,14 @@ def alias_mismatch(aliases: dict[str, Alias], served: list[str]) -> dict | None:
 
 # --- one call ---------------------------------------------------------------------------
 
-def call_chat(client: OpenAI, alias: str, prompt: str, budget: int, reasoning_effort: str | None = None) -> dict:
+def call_chat(client: OpenAI, alias: str, prompt: str, budget: int, reasoning_effort: str | None = None,
+              temperature: float | None = 0) -> dict:
     extra = {"reasoning_effort": reasoning_effort} if reasoning_effort else {}
+    if temperature is not None:
+        extra["temperature"] = temperature
     started = time.monotonic()
     raw = client.chat.completions.with_raw_response.create(
-        model=alias, messages=[{"role": "user", "content": prompt}], max_tokens=budget, temperature=0, **extra)
+        model=alias, messages=[{"role": "user", "content": prompt}], max_tokens=budget, **extra)
     latency = time.monotonic() - started
     response = raw.parse()
     choice = response.choices[0]
@@ -270,11 +294,14 @@ def call_chat(client: OpenAI, alias: str, prompt: str, budget: int, reasoning_ef
     }
 
 
-def call_responses(client: OpenAI, alias: str, prompt: str, budget: int, reasoning_effort: str | None = None) -> dict:
+def call_responses(client: OpenAI, alias: str, prompt: str, budget: int, reasoning_effort: str | None = None,
+                   temperature: float | None = 0) -> dict:
     extra = {"reasoning": {"effort": reasoning_effort}} if reasoning_effort else {}
+    if temperature is not None:
+        extra["temperature"] = temperature
     started = time.monotonic()
     raw = client.responses.with_raw_response.create(
-        model=alias, input=prompt, max_output_tokens=budget, temperature=0, **extra)
+        model=alias, input=prompt, max_output_tokens=budget, **extra)
     latency = time.monotonic() - started
     response = raw.parse()
     reasoning = "".join(part.text or "" for item in response.output if item.type == "reasoning"
@@ -361,7 +388,8 @@ def memory_section(before: dict | None, after: dict | None) -> dict:
 
 def alias_row(alias: Alias) -> dict:
     return {"alias": alias.name, "backend_model": alias.backend_model, "route": alias.route,
-            "api_base": alias.api_base, "loaded_before_run": None, "unload_settle_s": None,
+            "api_base": alias.api_base, "temperature": alias.temperature,
+            "loaded_before_run": None, "unload_settle_s": None,
             "cold": None, "load_s": None,
             "opening_call_s": None, "misroute": None,
             "resident_gib": None, "gpu_gib": None, "context_length": None, "error": None}
@@ -371,7 +399,7 @@ def open_alias(client: OpenAI, alias: Alias, backend: OllamaBackend | None, args
                row: dict) -> None:
     """Load the alias's model on its backend (timed as load_s), then make the opening call through the gateway.
 
-    The load is skipped for backends that can't report what is resident (a frontier API), since a load
+    The load is skipped for backends that can't report what is resident (a vendor API), since a load
     can't be told from a warm call there. The opening call still runs, so connection setup stays out of
     the first case's latency.
     """
@@ -385,7 +413,7 @@ def open_alias(client: OpenAI, alias: Alias, backend: OllamaBackend | None, args
             row["cold"] = backend.footprint(alias.backend_model) is None
             if row["cold"]:
                 row["load_s"] = round(backend.load(alias.backend_model), 2)
-        reply = call_chat(client, alias.name, OPENING_PROMPT, OPENING_BUDGET)
+        reply = call_chat(client, alias.name, OPENING_PROMPT, OPENING_BUDGET, temperature=alias.temperature)
         row["opening_call_s"] = round(reply["latency_s"], 2)
         row["misroute"] = find_misroute(alias, backend, reply["routed_model"])
         if backend is not None:
@@ -411,11 +439,13 @@ def fail_case(result: dict, kind: str, detail: str) -> dict:
 
 
 def run_case(client: OpenAI, case: Case, alias: Alias, backend: OllamaBackend | None) -> dict:
-    result = {"id": case.id, "alias": case.alias, "api": case.api, "status": "fail", "failure": None,
+    result = {"id": case.id, "alias": case.alias, "api": case.api, "temperature": alias.temperature,
+              "status": "fail", "failure": None,
               "detail": None, "latency_s": None, "output_tokens": None, "tokens_per_s": None,
               "finish": None, "answer_preview": None, "reasoning_chars": None, "routed_model": None}
     try:
-        reply = CALLS[case.api](client, case.alias, case.prompt, case.output_budget, case.reasoning_effort)
+        reply = CALLS[case.api](client, case.alias, case.prompt, case.output_budget, case.reasoning_effort,
+                                alias.temperature)
     except Exception as exc:
         return fail_case(result, "error", f"{type(exc).__name__}: {exc}")
     answer, inline_thinking = split_thinking(reply["answer"])
@@ -520,15 +550,16 @@ def fmt(value: Any, unit: str = "", none: str = "-") -> str:
 def describe_alias(a: dict) -> str:
     if a["cold"] is None and a["opening_call_s"] is None:
         start = "not opened"
-    elif a["cold"] is None:  # a backend that can't report what is resident, such as a frontier API
+    elif a["cold"] is None:  # a backend that can't report what is resident, such as a vendor API
         start = f"no load to time, opening call {fmt(a['opening_call_s'], ' s')}"
     elif a["cold"]:
         before = "was loaded, unloaded first" if a["loaded_before_run"] else "wasn't loaded"
         start = f"load {fmt(a['load_s'], ' s')} ({before}), opening call {fmt(a['opening_call_s'], ' s')}"
     else:
         start = f"already resident, opening call {fmt(a['opening_call_s'], ' s')}"
-    text = (f"  {a['alias']} -> {a['backend_model']}: {start}, {fmt(a['resident_gib'], ' GiB')} resident "
-            f"({fmt(a['gpu_gib'], ' GiB')} on GPU), context {fmt(a['context_length'])}")
+    temperature = "no temperature sent" if a["temperature"] is None else f"temperature {a['temperature']}"
+    text = (f"  {a['alias']} -> {a['backend_model']} ({temperature}): {start}, {fmt(a['resident_gib'], ' GiB')} "
+            f"resident ({fmt(a['gpu_gib'], ' GiB')} on GPU), context {fmt(a['context_length'])}")
     for label in ("misroute", "error"):
         if a[label]:
             text += f"  {label.upper()} {a[label]}"
@@ -589,7 +620,7 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
     try:
-        aliases = load_aliases(args.config)
+        aliases = apply_alias_settings(args.cases, load_aliases(args.config))
         cases = load_cases(args.cases, aliases)
     except (ConfigError, OSError, yaml.YAMLError) as exc:
         print(f"config error: {exc}", file=sys.stderr)

@@ -90,3 +90,52 @@ same cases, and judge-based scoring.
 - **Course material is easy to leak by accident.** A course dataset prompt almost went into the
   public cases file and was caught on review. It's now a written review rule
   (`CODING_STANDARDS.md`).
+
+## 2026-10-21 (afternoon) — a second backend: `gpt-6-luna` through OpenRouter
+
+### Part 2 · Tool Integration
+
+- **A second backend behind the same front door.** `openrouter-reasoning` → `gpt-6-luna` through
+  OpenRouter is one config entry. Every case now names both aliases, so each run compares them on
+  the same prompts and checks.
+- **LiteLLM loaded a credentials file nobody pointed it at.** In its default DEV mode, LiteLLM
+  1.103.3 calls `load_dotenv()` at import (`litellm/__init__.py`, `proxy/proxy_cli.py`), and
+  python-dotenv searches upward from LiteLLM's install folder. The first `.env` above the
+  gateway's `.venv/` is `problem_first_ai/.env`. Tested by importing the proxy's command line with
+  the key unset: every variable in that file appeared in the environment (I counted them; no value
+  was printed). With `LITELLM_MODE=PRODUCTION`, none did. `run_proxy.sh` now sets that and reads
+  only `OPENROUTER_API_KEY` from the file.
+- **OpenRouter isn't the frontier.** For `gpt-6-luna`, OpenRouter lists three upstreams (OpenAI,
+  Azure, Amazon Bedrock) and none of them takes a temperature
+  (`openrouter.ai/api/v1/models/openai/gpt-6-luna/endpoints`, read on 2026-10-21). Its timings
+  carry a hop and a choice of upstream, so the alias was renamed from `frontier-reasoning`, and
+  `frontier-*` waits for a vendor API called directly (ADR 0003).
+
+### Part 4 · Evaluation Metrics
+
+- **One failure can hide behind another.** In the 17:29 run, the alias's opening call got
+  OpenRouter's 401 ("This API key expires later than this account allows"). The four cases after
+  it got LiteLLM's own 429 ("No deployments available … cooldown"), not the 401: LiteLLM had paused
+  the alias after one failure. With one backend per alias and no fallback, that pause only hides
+  the real error, so `disable_cooldowns` is now on. A new key with a shorter expiry fixed the 401.
+- **Determinism isn't always on offer.** In the 17:50 run, LiteLLM refused `temperature=0` for
+  `gpt-6-luna` on the Responses API. It applies OpenAI's GPT-5-family rule, which allows a
+  temperature other than 1 only at reasoning effort "none", and the pinned model map has no
+  `gpt-6-luna` entry saying "none" is supported (`llms/openai/responses/transformation.py`). So
+  the OpenRouter alias is sent no temperature, and its answers vary: the riddle's wording changed
+  between the 17:50 and 18:03 runs. OpenRouter does list `seed` for the OpenAI and Azure
+  upstreams. It's best effort and not tried yet.
+- **Chat let through what Responses refused.** The Chat Completions calls with temperature 0 went
+  through to OpenRouter without an error. Whether OpenRouter applied the temperature is unknown.
+
+### Overall Reflection
+
+- **Read a dependency's defaults before trusting them.** Two of today's surprises were LiteLLM
+  defaults: loading a `.env` and pausing a failing alias. Both were found in its source, after a
+  symptom.
+- **A diagnosis table can be wrong too.** The skill said `run_proxy.sh`'s missing-key warning
+  would be in `logs/proxy.log` when it went only to the terminal, and it would have read the
+  cooldown 429 as rate limiting. Both are fixed. A test copy of `run_proxy.sh` with a stand-in `uv`
+  showed the warning now lands in the log.
+- **A tier says how a model is reached, not only where it runs** (ADR 0003, glossary: Tier,
+  Upstream).
