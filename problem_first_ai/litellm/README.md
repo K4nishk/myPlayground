@@ -10,7 +10,9 @@ aliases answer the same cases, so each run compares them. Moving an alias to ano
 vLLM later is a one-line change in `litellm_config.yaml`, and the validator proves nothing broke.
 Terms are in [GLOSSARY.md](GLOSSARY.md); the hard-to-reverse decisions are in
 [docs/adr/](docs/adr/); the rest of the design is in
-[docs/2026-10-20-design-decisions.md](docs/2026-10-20-design-decisions.md).
+[docs/2026-10-20-design-decisions.md](docs/2026-10-20-design-decisions.md). The plan for comparing
+a vLLM backend on this Mac with the Ollama one (*Planned*, not built) is in
+[docs/2026-10-21-vllm-metal-decisions.md](docs/2026-10-21-vllm-metal-decisions.md).
 
 ## Layout
 
@@ -101,6 +103,11 @@ Two files live at the repo root, because Claude Code sessions for this work star
   OpenRouter, `frontier` a vendor API called directly), add cases for it
   to `cases.yaml`, run `./setup.sh` to pull the model, restart the gateway, then validate.
   Re-pointing an alias starts a new baseline ([ADR 0002](docs/adr/0002-an-alias-promises-a-role.md)).
+- **Add a candidate** (an alias pinned to one backend model for an experiment): name it after its
+  role alias plus `-<backend>-<model>-<quantization>`, e.g. `local-reasoning-vllm-r1-14b-mlx4`,
+  so it can't be re-pointed without being renamed. A candidate on a backend that is usually off
+  gets its own config and cases under `experiments/`, not a place in `litellm_config.yaml`
+  ([ADR 0005](docs/adr/0005-one-local-backend-at-a-time.md)).
 - **Add an OpenRouter alias:** name it `openrouter-<role>`, like `openrouter-reasoning`, and
   reference its key as `api_key: os.environ/OPENROUTER_API_KEY`. Never write a key value into a
   file. To compare it with a local alias, list both under one case's `alias:` in `cases.yaml`.

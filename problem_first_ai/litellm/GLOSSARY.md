@@ -43,6 +43,10 @@ _Avoid_: provider, endpoint
 A backend model loaded in memory, able to answer without first being loaded.
 _Avoid_: running, active, hot
 
+**Footprint**:
+The memory a resident backend model takes on its machine, measured the same way for every backend there.
+_Avoid_: size, VRAM, RSS
+
 **Context window**:
 The most tokens a resident model holds for one request, prompt and output together.
 _Avoid_: max tokens, context size
@@ -92,3 +96,7 @@ _Avoid_: truncation, empty response
 **Baseline**:
 A passing run recorded as a dated story update so its numbers can be cited, valid only for the backend model each alias had at the time.
 _Avoid_: benchmark, reference run
+
+**Experiment**:
+A dated comparison of backend models for one role, run on the same cases under the same conditions and recorded in one story update.
+_Avoid_: benchmark, bake-off, A/B test

@@ -26,6 +26,10 @@ Terms are defined in [`GLOSSARY.md`](../GLOSSARY.md); the two hard-to-reverse de
   skill that every later change must pass.
 - `deepseek-r1:14b` cannot call tools (its Ollama prompt template has no tools section), so it can
   serve Assignment 1's query-understanding part but not the tool or ReAct parts.
+
+  > **Conflict (2026-10-21):** `ollama show deepseek-r1:14b` now lists the capabilities `tools,
+  > thinking, completion`, and its template renders `tool_calls`. Whether the model calls tools
+  > reliably is untested. See [the 2026-10-21 decisions](2026-10-21-vllm-metal-decisions.md#conflicts).
 - LiteLLM is pinned to an exact version (1.103.3, the newest release at least 14 days old) with a
   lockfile, because releases 1.82.7 and 1.82.8 were compromised on PyPI in March 2026. No key value
   is written to any file; only frontier aliases read a key, from the environment.
