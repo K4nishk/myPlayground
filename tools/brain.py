@@ -199,6 +199,8 @@ def as_list(value: object) -> list[str]:
 
 class Brain:
     def __init__(self, root: Path):
+        # Resolve so rel() works when root is reached through a symlink (macOS /tmp, /var).
+        root = root.resolve()
         self.root = root
         self.raw = root / "raw"
         self.wiki = root / "wiki"

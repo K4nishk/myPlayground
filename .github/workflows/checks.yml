@@ -1,0 +1,19 @@
+name: checks
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-24.04
+    steps:
+      # Pinned to a commit, not a tag, so a moved tag can't change what runs.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install uv
+        run: pipx install uv==0.13.1
+      - name: Run the repo's checks
+        run: tools/check.sh

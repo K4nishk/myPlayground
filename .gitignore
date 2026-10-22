@@ -223,3 +223,6 @@ __marimo__/
 # Course material — never publish
 problem_first_ai/preread/
 problem_first_ai/Assignment 1/
+
+# macOS folder metadata
+.DS_Store
