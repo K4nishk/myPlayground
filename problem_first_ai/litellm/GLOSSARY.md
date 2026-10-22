@@ -61,6 +61,14 @@ _Avoid_: assertion, eval
 One execution of the validator over the cases of every alias the gateway knows.
 _Avoid_: test run, suite run
 
+**Load**:
+Bringing a backend model into memory so it becomes resident.
+_Avoid_: warm-up, cold start
+
+**Opening call**:
+The first call to an alias in a run, made once its model is resident and before its cases.
+_Avoid_: warm-up call, first call, start call
+
 **Cold call**:
 A call that forces its alias's backend model to load before answering.
 _Avoid_: first call

@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# Start the LiteLLM gateway on 127.0.0.1:4000 in the foreground (Ctrl-C to stop).
+#
+# Fixed to loopback and port 4000: the validator and every client expect it there, and binding
+# to another interface would expose the gateway to the network.
+#
+# Logs go to the terminal and to logs/proxy.log, which the validator skill reads when it
+# diagnoses a failure.
+set -euo pipefail
+
+cd "$(dirname "$0")"
+
+# A non-secret local default; set your own in the environment to override it.
+export LITELLM_MASTER_KEY="${LITELLM_MASTER_KEY:-sk-local-dev}"
+# Use the cost map bundled with the pinned release instead of fetching one from GitHub.
+export LITELLM_LOCAL_MODEL_COST_MAP=True
+
+if ! command -v uv >/dev/null 2>&1; then
+  echo "uv is not installed. Run ./setup.sh first." >&2
+  exit 1
+fi
+
+if (exec 3<>/dev/tcp/127.0.0.1/4000) 2>/dev/null; then
+  echo "Port 4000 on 127.0.0.1 is already in use; is the gateway already running?" >&2
+  exit 1
+fi
+
+mkdir -p logs
+echo "Starting LiteLLM gateway on http://127.0.0.1:4000 (config: litellm_config.yaml)"
+uv run --frozen litellm --config litellm_config.yaml --host 127.0.0.1 --port 4000 2>&1 \
+  | tee logs/proxy.log

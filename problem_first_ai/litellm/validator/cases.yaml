@@ -1,0 +1,56 @@
+# Cases the validator sends through the gateway. A case is one prompt to one alias, plus the
+# checks its answer must pass. Add cases when you add an alias or a feature; never loosen a check
+# to make a run pass.
+#
+# Fields:
+#   id             unique name, shown in the table
+#   alias          an alias from litellm_config.yaml
+#   api            chat (Chat Completions) or responses (Responses API)
+#   prompt         the user message
+#   output_budget  most tokens the model may generate, thinking included
+#                  (reasoning models think first: give them room, e.g. 2048)
+#   checks         at least one; every check must pass, and a non-empty, finished answer is
+#                  always required
+#   reasoning_effort  optional: low, medium or high, sent the way the course's ChatOpenAI sends it
+#                  (Chat: reasoning_effort; Responses: reasoning.effort)
+#
+# Every alias in litellm_config.yaml needs at least one case, so a passing run covers them all.
+#
+# Check types (named after the course dataset's answer_check_type):
+#   exact_numeric  expected: <number>   the final number (last \boxed{}, else last number) equals it
+#   contains       expected: <text> or [<text>, ...]   the answer contains any of them, ignoring case
+
+cases:
+  - id: reasoning-arithmetic
+    alias: local-reasoning
+    api: chat
+    prompt: What is 17 × 23? Reply with the number only.
+    output_budget: 2048
+    checks:
+      - {type: exact_numeric, expected: 391}
+
+  - id: reasoning-riddle
+    alias: local-reasoning
+    api: chat
+    prompt: Which weighs more, a kilogram of feathers or a kilogram of steel? Answer in one sentence.
+    output_budget: 2048
+    checks:
+      - {type: contains, expected: [same, equal, neither]}
+
+  - id: reasoning-responses-api
+    alias: local-reasoning
+    api: responses
+    prompt: What is 12 + 30? Reply with the number only.
+    output_budget: 2048
+    checks:
+      - {type: exact_numeric, expected: 42}
+
+  # The course app's call settings: the Responses API with reasoning_effort "low".
+  - id: course-compat-responses
+    alias: local-reasoning
+    api: responses
+    reasoning_effort: low
+    prompt: A train travels 240 km in 3 hours. What is its average speed in km/h? Reply with the number only.
+    output_budget: 2048
+    checks:
+      - {type: exact_numeric, expected: 80}

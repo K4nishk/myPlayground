@@ -1,0 +1,27 @@
+# LiteLLM gateway config. Clients call an alias; the alias maps to one backend model.
+#
+# Aliases are named <tier>-<role> and promise a role, not a model (docs/adr/0002). Re-pointing
+# an alias to another backend model is a one-line change here, and it starts a new baseline.
+#
+# The validator skill reads this file to learn which aliases and backends to test, and
+# setup.sh pulls only the Ollama models listed here.
+
+model_list:
+  - model_name: local-reasoning
+    litellm_params:
+      model: ollama_chat/deepseek-r1:14b
+      api_base: http://127.0.0.1:11434
+      # Context window: prompt and output together. Matches OLLAMA_CONTEXT_LENGTH so the
+      # gateway and the server agree even if the server was started without it.
+      num_ctx: 4096
+
+litellm_settings:
+  # No drop_params: silently dropping an unsupported parameter could drop temperature or
+  # max_tokens and quietly undo the validator's budgets. (For ollama_chat, LiteLLM already
+  # maps OpenAI's reasoning_effort onto Ollama's think switch.)
+  telemetry: false
+
+general_settings:
+  # The value comes from the environment (run_proxy.sh sets a local default); never write a
+  # key into this file.
+  master_key: os.environ/LITELLM_MASTER_KEY
