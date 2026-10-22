@@ -117,7 +117,7 @@ Hugging Face Transformers + PEFT + TRL (SFT) · bitsandbytes (QLoRA) ·
 AutoAWQ / GPTQ tooling or vLLM's supported quantized checkpoints ·
 vLLM on Kubernetes ([02](02-k8s-vllm-serving.md)) · eval harness with an
 LLM judge ([evaluation](../concepts/llm-evaluation.md)) · the
-[LangGraph two-call graph](../notebooks/langgraph-two-call-extension.md#step-9--point-it-at-a-sovereign-model)
+[LangGraph two-call graph](../notebooks/langgraph-two-call-extension.md#step-7--point-it-at-a-sovereign-model)
 as a ready-made A/B harness between the API and the local model.
 
 ## Risks

@@ -65,6 +65,8 @@ the volume where they cross is the
 - Same decoding settings (temperature, max tokens) across candidates.
 - Every reported number goes into a `raw/story-updates/` note with how it was
   measured — that's what makes it citable here.
+- Traces ([LLM tracing](llm-tracing.md)) give per-step latency and the exact
+  prompts a judge should see; tag runs with a `thread_id` so evals and traces join up.
 
 ## Used by
 

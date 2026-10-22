@@ -44,7 +44,7 @@ python3 tools/brain.py lint [--strict]              # full report
 python3 tools/brain.py ingested <source> ...        # mark sources absorbed (after updating pages)
 python3 tools/brain.py log <action> "<title>" --note "<pages touched>"
 python3 -m unittest discover -s tests               # tooling tests (stdlib only)
-cd labs/langgraph-two-call && python -m unittest test_two_call   # needs requirements.txt
+python -m unittest discover -s labs/langgraph-two-call         # needs its requirements.txt (+ nbclient for the notebook test)
 python3 labs/sovereign-ai/crossover.py --example    # crossover calculator
 ```
 

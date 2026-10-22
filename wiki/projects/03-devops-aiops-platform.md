@@ -59,7 +59,7 @@ Plus a cost signal: GPU-hours per million generated tokens — the number the
 ### 3. AIOps triage agent
 
 A LangGraph graph built from the
-[classify → respond pattern](../notebooks/langgraph-two-call-extension.md#variant-b--classify-then-respond-with-a-conditional-edge):
+classify → respond pattern you've already built ([course notebook](../notebooks/langchain-langgraph-demo.md#what-the-notebook-covers), cells 38–50), hardened as in [step 2 of the extension plan](../notebooks/langgraph-two-call-extension.md#step-2--harden-the-router):
 
 1. **Classify** the alert: component (serving / autoscaling / node / network),
    severity, likely blast radius.
@@ -70,7 +70,8 @@ A LangGraph graph built from the
 4. **Remediate only behind approval:** write actions (rollback, scale) pause on
    a LangGraph `interrupt` until a human approves.
 
-Guardrails: tools are read-only by default; every tool call lands in the trace;
+Guardrails: tools are read-only by default; every tool call lands in the trace
+([LLM tracing](../concepts/llm-tracing.md): OpenInference + Arize, as in the notebook);
 the agent's own latency and accuracy are measured like any other service.
 
 ## Evaluation

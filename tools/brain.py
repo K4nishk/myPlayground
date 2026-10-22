@@ -46,7 +46,7 @@ INLINE_CODE = re.compile(r"`[^`\n]*`")
 # High-precision credential shapes. Matches are reported by kind and length only.
 SECRETS = {
     "OpenAI/OpenRouter-style key": re.compile(r"\bsk-[A-Za-z0-9_-]{16,}"),
-    "Arize-style key": re.compile(r"\bak-[0-9a-f]{8}-[0-9a-f]{4}"),
+    "Arize-style key": re.compile(r"\bak-[0-9a-f]{8}-[0-9a-f-]{4,}"),
     "GitHub token": re.compile(r"\b(?:gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,})"),
     "Google API key": re.compile(r"\bAIza[0-9A-Za-z_-]{30,}"),
     "Hugging Face token": re.compile(r"\bhf_[A-Za-z0-9]{20,}"),
@@ -55,6 +55,8 @@ SECRETS = {
     "Slack token": re.compile(r"\bxox[baprs]-[A-Za-z0-9-]{10,}"),
     "private key": re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY-----"),
 }
+# Code that prints part of an env var, e.g. print(os.environ["API_KEY"][:20]): the next run leaks a prefix.
+ENV_SLICE = re.compile(r"os\.(?:environ\[[^\]]+\]|environ\.get\([^)]*\)|getenv\([^)]*\))\s*\[[^\]]*:[^\]]*\]")
 
 
 @dataclass(frozen=True)
@@ -172,9 +174,14 @@ def notebook_secrets(raw: bytes) -> list[tuple[str, str, int]] | None:
         return None
     hits = []
     for i, cell in enumerate(cells):
-        parts = {"source": "".join(cell.get("source", "")), "output": json.dumps(cell.get("outputs", []))}
+        source = "".join(cell.get("source", ""))
+        parts = {"source": source, "output": json.dumps(cell.get("outputs", []))}
         for where, text in parts.items():
             hits += [(f"cell {i} {where}", kind, n) for kind, n in find_secrets(text)]
+        if cell.get("cell_type") == "code":
+            live = "\n".join(line for line in source.splitlines() if not line.lstrip().startswith("#"))
+            hits += [(f"cell {i} source", "code that prints a slice of an env var", len(m.group(0)))
+                     for m in ENV_SLICE.finditer(live)]
     return hits
 
 
@@ -317,8 +324,11 @@ class Brain:
                 hits = [("", kind, n) for kind, n in find_secrets(raw.decode(errors="ignore"))]
             for where, kind, n in hits:
                 at = f" in {where}" if where else ""
-                issues.append(Issue("warn", self.rel(path),
-                                    f"possible credential{at} ({kind}, {n} chars): rotate it, then remove it"))
+                if kind.startswith("code that"):
+                    message = f"{where}: {kind}; print whether it is set and its length instead"
+                else:
+                    message = f"possible credential{at} ({kind}, {n} chars): rotate it, then remove it"
+                issues.append(Issue("warn", self.rel(path), message))
         for page in self._markdown_files():
             for kind, n in find_secrets(page.read_text()):
                 issues.append(Issue("error", self.rel(page), f"credential-shaped string ({kind}, {n} chars)"))

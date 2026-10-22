@@ -1,4 +1,6 @@
 langgraph>=1.0
-langchain>=1.0          # init_chat_model, only needed with --model
+langchain>=1.0          # init_chat_model, only needed with --model / OFFLINE = False
 # plus the provider package for the model you use, e.g. one of:
-# langchain-anthropic  langchain-openai  langchain-google-genai
+# langchain-openrouter  langchain-anthropic  langchain-openai  langchain-google-genai
+# to run test_notebook.py (executes fortune_extension.ipynb offline):
+# nbclient nbformat ipykernel

@@ -157,6 +157,13 @@ class SecretChecks(BrainFixture):
         self.assertFlags("possible credential in cell 0 output", level="warn")
         self.assertFalse(any(self.KEY[:12] in m for m in self.messages()), "never echo the value")
 
+    def test_code_that_slices_env_vars_is_flagged_before_it_runs(self):
+        self.write(".brain/watch.txt", "lab/*.ipynb\n")
+        cell = 'print(os.environ[\\"KEY\\"][:20])\\n# print(os.getenv(\\"OLD\\")[:5])'
+        self.write("lab/demo.ipynb", WatchedSources.NB.replace("print(1)", cell) % "[]")
+        found = [m for m in self.messages("warn") if "slice of an env var" in m]
+        self.assertEqual(len(found), 1, found)      # the commented-out line is ignored
+
     def test_credential_in_wiki_is_an_error(self):
         self.write("wiki/concepts/c.md", PAGE.format(
             title="C", type="concept", updated="2026-10-18", body=f"[P](../projects/p.md) {self.KEY}"))
