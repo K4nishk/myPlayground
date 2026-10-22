@@ -253,6 +253,8 @@ class Parsing(unittest.TestCase):
         self.assertIn("notes-1", slugs)
 
 
+@unittest.skipIf(os.environ.get("CI"), "a clean checkout lacks the git-ignored course material the wiki "
+                 "cites; tools/check.sh skips the brain lint in CI for the same reason")
 class ThisRepo(unittest.TestCase):
     def test_repository_lints_without_errors(self):
         errors = [i for i in brain.Brain(ROOT).lint() if i.level == "error"]

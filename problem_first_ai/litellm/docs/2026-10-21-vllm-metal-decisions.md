@@ -101,7 +101,7 @@ cluster will. The point is not capacity.
 - **Telemetry stays on.**
   - **vLLM's usage reports to its maintainers** are left at vLLM's default, which is on.
   - **Local telemetry:** after each vLLM alias's cases, the runner saves the `vllm:` lines from
-    `/metrics` into the run report. That's the same endpoint Prometheus will scrape on the cluster.
+    `/metrics` into the run report. That's the same path Prometheus will scrape on the cluster.
   - LiteLLM's `telemetry: false` is unchanged.
 
 ### Through the gateway
@@ -259,7 +259,7 @@ cluster will. The point is not capacity.
   - the transformers issue, <https://github.com/vllm-project/vllm/issues/59562>
 - **LiteLLM behaviour** comes from reading the pinned 1.103.3 source in `.venv`:
   - `llms/hosted_vllm/chat/transformation.py` and `llms/hosted_vllm/responses/transformation.py`
-  - `utils.py` (the provider's Responses API settings)
+  - `utils.py` (LiteLLM's Responses API settings for each kind of backend)
   - `responses/main.py` (`use_chat_completions_api`)
   - `llms/ollama/chat/transformation.py` (how `reasoning_effort` maps to `think`)
   - `litellm_core_utils/prompt_templates/common_utils.py` (`_extract_reasoning_content`, `_parse_content_for_reasoning`)
