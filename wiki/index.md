@@ -8,7 +8,7 @@ Narratives: [story bank](../story-bank/index.md).
 
 | Page | Summary | Status | Updated |
 |---|---|---|---|
-| [Overview](overview.md) | How the six projects and two tracks (LangGraph learning, local model gateway) connect: dependency graph, the measurement chain, concept map | draft | 2026-10-20 |
+| [Overview](overview.md) | How the six projects and two tracks (LangGraph learning, local model gateway) connect: dependency graph, the measurement chain, concept map; gateway first slice measured | draft | 2026-10-21 |
 
 ## Projects
 
@@ -28,10 +28,10 @@ Narratives: [story bank](../story-bank/index.md).
 | [KV cache](concepts/kv-cache.md) | Sizing formula, why it — not weights — caps concurrency, PagedAttention, what shrinks it | draft | 2026-10-18 |
 | [Continuous batching](concepts/continuous-batching.md) | Iteration-level scheduling, prefill vs decode, chunked prefill, the concurrency knee | draft | 2026-10-18 |
 | [GPU scheduling](concepts/gpu-scheduling.md) | Device plugin, taints/affinity, MIG vs time-slicing vs MPS, DRA, queueing, warm-node tricks | draft | 2026-10-18 |
-| [Cold starts](concepts/cold-starts.md) | The five terms of an LLM cold start, how to measure each, mitigations | draft | 2026-10-18 |
+| [Cold starts](concepts/cold-starts.md) | The five terms of an LLM cold start, how to measure each, mitigations; measured Ollama reloads (0.8 s, but about 5 s slower within 2 s of an unload) | draft | 2026-10-21 |
 | [PEFT (LoRA / QLoRA)](concepts/parameter-efficient-finetuning.md) | LoRA math and knobs, QLoRA, merge vs multi-LoRA serving, running sweeps well | draft | 2026-10-18 |
 | [Quantization](concepts/quantization.md) | Memory arithmetic, FP8/INT8/GPTQ/AWQ/GGUF/NF4, evaluating the precision trade-off | draft | 2026-10-18 |
-| [LLM evaluation](concepts/llm-evaluation.md) | Quality (rubrics, LLM-judge biases), TTFT/TPOT/E2E percentiles, goodput, cost | draft | 2026-10-18 |
+| [LLM evaluation](concepts/llm-evaluation.md) | Quality (rubrics, LLM-judge biases, final-answer matching, starved budgets), TTFT/TPOT/E2E percentiles, goodput, cost | draft | 2026-10-21 |
 | [LangGraph state graphs](concepts/langgraph-state-graphs.md) | State, reducers, nodes, edges, checkpointers, streaming modes, interrupts, plus 10 verified gotchas (LangGraph 1.2) | draft | 2026-10-18 |
 | [LLM tracing](concepts/llm-tracing.md) | OpenTelemetry + OpenInference + Arize: span tree of a graph run, thread_id → session, flush and re-run gotchas | draft | 2026-10-18 |
 
@@ -48,4 +48,4 @@ Answers to queries worth keeping land in `synthesis/` and are listed here.
 
 | Page | Summary | Status | Updated |
 |---|---|---|---|
-| [Local model gateway plan (2026-10-20)](synthesis/2026-10-20-local-model-gateway-plan.md) | LiteLLM front door with local / cluster / frontier tiers; aliases promise a role; Mac is the dev loop, capacity measured on the cluster; first slice and Planned work | draft | 2026-10-20 |
+| [Local model gateway plan (2026-10-20)](synthesis/2026-10-20-local-model-gateway-plan.md) | LiteLLM front door with local / cluster / frontier tiers; aliases promise a role; Mac is the dev loop. First slice built and measured: 4/4 cases, about 14.8 tok/s, 8.23 GiB on the GPU, no swap | active | 2026-10-21 |

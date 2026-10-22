@@ -1,11 +1,11 @@
 ---
 title: Local Model Gateway — Plan (2026-10-20)
 type: synthesis
-status: draft
+status: active
 tags: [litellm, gateway, ollama, open-weight, routing, sovereign-ai]
-sources: [raw/inbox/2026-10-20-local-model-gateway-decisions.md]
-related: [projects/06-sovereign-ai-engine.md, overview.md]
-updated: 2026-10-20
+sources: [raw/inbox/2026-10-20-local-model-gateway-decisions.md, raw/story-updates/2026-10-21-local-model-gateway-baseline.md, problem_first_ai/litellm/JOURNAL.md]
+related: [projects/06-sovereign-ai-engine.md, overview.md, concepts/cold-starts.md, concepts/llm-evaluation.md]
+updated: 2026-10-21
 ---
 
 # Local Model Gateway — Plan
@@ -53,7 +53,7 @@ numbers can be cited here.
 
 ## Decided
 
-- **First slice** (scope decided; being built on 2026-10-20):
+- **First slice** (built 2026-10-20/21; results below):
   - One alias, `local-reasoning` → `deepseek-r1:14b` on Ollama 0.40.6.
   - A 4096-token context window, with one model resident at a time.
   - The gateway on `127.0.0.1:4000`, serving both Chat Completions and the Responses API.
@@ -68,6 +68,42 @@ numbers can be cited here.
 - **Course material is never published.** `problem_first_ai/preread/` and
   `problem_first_ai/Assignment 1/` stay out of git. This is now enforced in `.gitignore`.
 
+## Built and measured (2026-10-21)
+
+All figures are from the
+[baseline note](../../raw/story-updates/2026-10-21-local-model-gateway-baseline.md): three
+consecutive runs of the validator through the gateway, at temperature 0, on the M3 Pro.
+
+| Case | API | Latency | Output tokens | Tokens/s |
+|---|---|---|---|---|
+| Arithmetic | Chat Completions | 17.17–17.26 s | 255 | 14.8 |
+| Riddle | Chat Completions | 20.78–20.79 s | 309 | 14.9 |
+| Arithmetic | Responses API | 13.06–13.11 s | 193 | 14.7–14.8 |
+| Course settings (`reasoning_effort: low`) | Responses API | 14.63–14.68 s | 217 | 14.8 |
+
+- **Every case passed in every run, with no swapping.**
+- **The model** takes 8.23 GiB, all on the GPU, with a 4096-token context window.
+- **Load time** is 0.78–0.79 s, timed directly on Ollama 5 s after an unload.
+- **The opening call** through the gateway takes 1.16–1.19 s.
+- **The course app's call settings pass through the gateway.** The Responses API with
+  `reasoning_effort: low` reaches the local model through LiteLLM's conversion.
+- **A reload straight after an unload is slow.** Within 2 s of an unload a load took 5.1–6.4 s;
+  from 5 s on, about 0.8 s. That's why the validator waits 5 s before timing a load. Why the wait
+  matters is still a hypothesis
+  ([cold starts](../concepts/cold-starts.md#measured-reloading-a-model-on-ollama-apple-silicon)).
+
+**How the validator works** (`problem_first_ai/litellm/validator/`, run by the
+`local-model-e2e-validator` skill). For each alias it:
+1. loads the model on Ollama (timed);
+2. makes an opening call through the gateway;
+3. runs the cases.
+
+Each case passes only with a finished, non-empty answer that passes its checks (named after the
+course dataset's: `exact_numeric`, `contains`). On every call it checks for misroutes from two
+sources: the gateway's routing header, and Ollama's list of resident models. It warns on swapping
+and on a context window that differs from the config. Learnings are kept in the project's
+[journal](../../problem_first_ai/litellm/JOURNAL.md), which the second brain now watches.
+
 ## Planned (not built)
 
 - **Planned:** running the three-model lineup (reasoning, text, coding) one after another moves to
@@ -80,8 +116,8 @@ numbers can be cited here.
   [crossover](../projects/06-sovereign-ai-engine.md#crossover-analysis) is priced against cloud
   GPUs, while utilization is recorded on the owned cluster.
 - **Planned:** add a frontier alias for `gpt-6-luna` that reads its key from the environment.
-- **Planned:** keep journaling learnings in `problem_first_ai/litellm/JOURNAL.md` as later
-  projects build on this one.
+- **Planned:** point Assignment 1's query-understanding part at `local-reasoning`. That's your
+  coursework; the gateway side is proven by the course-compatibility case below.
 
 ## Where it meets project 06
 
@@ -94,5 +130,7 @@ candidates get their own aliases later. The `Conflict` callout on the
 ## Sources
 
 - [Local model gateway — design decisions (2026-10-20)](../../raw/inbox/2026-10-20-local-model-gateway-decisions.md): everything on this page.
+- [Local model gateway baseline (2026-10-21)](../../raw/story-updates/2026-10-21-local-model-gateway-baseline.md): every measured figure on this page.
+- [`problem_first_ai/litellm/JOURNAL.md`](../../problem_first_ai/litellm/JOURNAL.md): what the build taught, under the course journal's section names.
 - [`problem_first_ai/litellm/GLOSSARY.md`](../../problem_first_ai/litellm/GLOSSARY.md): term definitions.
 - [`problem_first_ai/litellm/docs/adr/`](../../problem_first_ai/litellm/docs/adr/): ADR 0001 (the Mac is the dev loop) and ADR 0002 (an alias promises a role).

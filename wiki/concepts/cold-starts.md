@@ -3,9 +3,9 @@ title: Cold Starts
 type: concept
 status: draft
 tags: [autoscaling, latency, scale-to-zero, kubernetes]
-sources: [raw/roadmaps/2026-10-18-ai-infra-project-roadmap.md]
-related: [concepts/gpu-scheduling.md, concepts/quantization.md, projects/05-keda-scale-to-zero.md, projects/04-kserve-gpu-autoscaling.md]
-updated: 2026-10-18
+sources: [raw/roadmaps/2026-10-18-ai-infra-project-roadmap.md, raw/story-updates/2026-10-21-local-model-gateway-baseline.md]
+related: [concepts/gpu-scheduling.md, concepts/quantization.md, projects/05-keda-scale-to-zero.md, projects/04-kserve-gpu-autoscaling.md, synthesis/2026-10-20-local-model-gateway-plan.md]
+updated: 2026-10-21
 ---
 
 # Cold Starts
@@ -30,6 +30,20 @@ Terms 1–2 vanish if you keep a node warm with the image cached; terms 3–4
 remain on every new replica. That is the basis of the hot / warm / cold tiers
 in [05](../projects/05-keda-scale-to-zero.md#three-tiers-choose-per-model-from-its-traffic-pattern).
 
+## Measured: reloading a model on Ollama (Apple silicon)
+
+This is term 3 (weight load) for `deepseek-r1:14b` under Ollama 0.40.6 on the M3 Pro, from the
+[local model gateway baseline](../../raw/story-updates/2026-10-21-local-model-gateway-baseline.md):
+
+- **About 0.8 s** for a load 5 s or more after an unload, with the weights still in the macOS
+  file cache. This was steady across five samples and three validator runs.
+- **5.1–6.4 s** for a load within 2 s of an unload, one sample at each of three delays. So
+  back-to-back unload-and-reload is the wrong way to measure a cold start. The
+  [validator](../synthesis/2026-10-20-local-model-gateway-plan.md) now waits 5 s.
+- **5.84 s** for one load after the model had been unloaded for hours.
+- **Unexplained so far:** both slow cases. The hypotheses are Ollama waiting for freed GPU memory
+  to be reported, and weights that had left the file cache. Both are untested.
+
 ## Design implications
 
 - Scale-out must start **before** the SLO is breached: autoscale on queue
@@ -47,3 +61,4 @@ in [05](../projects/05-keda-scale-to-zero.md#three-tiers-choose-per-model-from-i
 ## Sources
 
 - [AI infra project roadmap](../../raw/roadmaps/2026-10-18-ai-infra-project-roadmap.md) — named as a core concept.
+- [Local model gateway baseline (2026-10-21)](../../raw/story-updates/2026-10-21-local-model-gateway-baseline.md) — the Ollama reload measurements.
