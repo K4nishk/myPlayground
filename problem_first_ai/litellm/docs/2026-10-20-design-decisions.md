@@ -35,7 +35,10 @@ Terms are defined in [`GLOSSARY.md`](../GLOSSARY.md); the two hard-to-reverse de
 - Capture resource utilization even on owned hardware: scaling up GPUs means a cloud bill, with my
   own hardware as the fallback. So project 06's crossover is priced against cloud GPUs while
   utilization is recorded on the owned cluster.
-- Add a frontier alias for `gpt-6-luna` later, reading its key from the environment.
+- Add a frontier alias for `gpt-6-luna` later, reading its key from the environment. Updated
+  2026-10-21: it goes through OpenRouter (`openrouter/openai/gpt-6-luna`) and reads
+  `OPENROUTER_API_KEY`, because the OpenRouter account has the budget for these calls. Its
+  latencies will include OpenRouter's hop, which matters when comparing it with the local tiers.
 - Keep journaling learnings in `problem_first_ai/litellm/JOURNAL.md` as later projects build on
   this one.
 

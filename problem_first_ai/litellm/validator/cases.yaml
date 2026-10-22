@@ -4,7 +4,8 @@
 #
 # Fields:
 #   id             unique name, shown in the table
-#   alias          an alias from litellm_config.yaml
+#   alias          an alias from litellm_config.yaml, or a list of them: the case runs once for
+#                  each, so they answer the same prompt under the same checks
 #   api            chat (Chat Completions) or responses (Responses API)
 #   prompt         the user message
 #   output_budget  most tokens the model may generate, thinking included
@@ -22,7 +23,7 @@
 
 cases:
   - id: reasoning-arithmetic
-    alias: local-reasoning
+    alias: [local-reasoning, frontier-reasoning]
     api: chat
     prompt: What is 17 × 23? Reply with the number only.
     output_budget: 2048
@@ -30,7 +31,7 @@ cases:
       - {type: exact_numeric, expected: 391}
 
   - id: reasoning-riddle
-    alias: local-reasoning
+    alias: [local-reasoning, frontier-reasoning]
     api: chat
     prompt: Which weighs more, a kilogram of feathers or a kilogram of steel? Answer in one sentence.
     output_budget: 2048
@@ -38,7 +39,7 @@ cases:
       - {type: contains, expected: [same, equal, neither]}
 
   - id: reasoning-responses-api
-    alias: local-reasoning
+    alias: [local-reasoning, frontier-reasoning]
     api: responses
     prompt: What is 12 + 30? Reply with the number only.
     output_budget: 2048
@@ -47,7 +48,7 @@ cases:
 
   # The course app's call settings: the Responses API with reasoning_effort "low".
   - id: course-compat-responses
-    alias: local-reasoning
+    alias: [local-reasoning, frontier-reasoning]
     api: responses
     reasoning_effort: low
     prompt: A train travels 240 km in 3 hours. What is its average speed in km/h? Reply with the number only.

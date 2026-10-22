@@ -1,6 +1,6 @@
 ---
 name: local-model-e2e-validator
-description: End-to-end check of the local model gateway (LiteLLM on 127.0.0.1:4000 in front of Ollama). Use after any change to litellm_config.yaml, an alias, a backend or the pinned versions; when asked to verify, smoke-test or regression-test the local models or the gateway; or when a local alias fails, is slow or is misrouted.
+description: End-to-end check of the local model gateway (LiteLLM on 127.0.0.1:4000 in front of Ollama, plus a frontier alias through OpenRouter). Use after any change to litellm_config.yaml, an alias, a backend or the pinned versions; when asked to verify, smoke-test or regression-test the local models, the frontier alias or the gateway; or when an alias fails, is slow or is misrouted.
 ---
 
 # Local model e2e validator
@@ -18,9 +18,11 @@ The code lives in `problem_first_ai/litellm/validator/`.
    uv run --frozen --project problem_first_ai/litellm python problem_first_ai/litellm/validator/scripts/e2e_runner.py --json
    ```
 
-   Give the command a 10-minute timeout: each alias's model is loaded fresh and every case waits
-   for a full answer, thinking included. Done when the command exits: code 0 with a JSON report
-   means every case passed, code 1 with a JSON report means something failed. A `config error:`
+   Give the command a 10-minute timeout: each local alias's model is loaded fresh and every case
+   waits for a full answer, thinking included. Each run also makes paid calls to the frontier
+   alias, so run it when asked or after a change, never in a loop. Done when the command exits:
+   code 0 with a JSON report means every case passed, code 1 with a JSON report means something
+   failed. A `config error:`
    line on stderr and no JSON means `litellm_config.yaml` or `validator/cases.yaml` is broken;
    report that line and stop.
 
@@ -29,7 +31,8 @@ The code lives in `problem_first_ai/litellm/validator/`.
    - `cases[].failure` and `cases[].detail`
    - `warnings`
    - `aliases`: backend model, `loaded_before_run`, `load_s`, `opening_call_s`, `misroute`,
-     memory, GPU share and context window
+     memory, GPU share and context window. A frontier alias has only the opening call and
+     `misroute`: its backend can't report what is loaded.
    - `memory`
 
    Done when you can name every run-level failure, every failed case and every warning.
@@ -61,6 +64,7 @@ so and ask the developer to run it.
 | `empty_answer` | The model finished with no answer, often all thinking | `ollama show <model>` for its template and capabilities |
 | `check_failed` | The answer is wrong | Quote `answer_preview`; runs are at temperature 0, so a re-run repeats it |
 | `error` | The call raised an exception | The detail, then the end of `logs/proxy.log` |
+| `error` on a frontier alias | The detail carries the HTTP status. 400 `UnsupportedParamsError`: the gateway refused a parameter the model doesn't accept (the config has no `drop_params`, on purpose). 401: OpenRouter refused the key: missing, revoked, or with an expiry longer than the account allows. 402: the key's credit limit or the account balance ran out. 429 from OpenRouter: rate limited. A 429 saying "No deployments available… cooldown" is LiteLLM pausing the alias after an earlier failure, which `disable_cooldowns` in the config should prevent: find that first failure | Quote the detail's message. For 401, the first line of `logs/proxy.log`: `run_proxy.sh` writes a warning there when it found no `OPENROUTER_API_KEY`. Never read, print or copy any `.env` file; checking the key and its credits on openrouter.ai is the developer's job |
 
 Warnings never fail a run:
 
@@ -75,16 +79,19 @@ Warnings never fail a run:
 The values below are illustrative; fill them in from the report.
 
 ```
-| Alias           | Backend model   | Load  | Opening call | Resident (GPU) | Context | Cases | Result |
-|-----------------|-----------------|-------|--------------|----------------|---------|-------|--------|
-| local-reasoning | deepseek-r1:14b | 6.0 s | 1.1 s        | 8.2 GiB (8.2)  | 4096    | 4/4   | PASS   |
+| Alias              | Backend model     | Load  | Opening call | Resident (GPU) | Context | Cases | Result |
+|--------------------|-------------------|-------|--------------|----------------|---------|-------|--------|
+| local-reasoning    | deepseek-r1:14b   | 6.0 s | 1.1 s        | 8.2 GiB (8.2)  | 4096    | 4/4   | PASS   |
+| frontier-reasoning | openai/gpt-6-luna | n/a   | 0.9 s        | n/a            | n/a     | 4/4   | PASS   |
 
-| Case                 | API  | Result | Latency | Tokens/s |
-|----------------------|------|--------|---------|----------|
-| reasoning-arithmetic | chat | pass   | 17.2 s  | 14.8     |
+| Case                 | API  | local-reasoning     | frontier-reasoning |
+|----------------------|------|---------------------|--------------------|
+| reasoning-arithmetic | chat | pass, 17.2 s, 14.8/s | pass, 2.1 s, 60/s  |
 ```
 
-List failed cases first, each with its `detail`. End with the swap result and `report_path`.
+List failed cases first, each with its alias and `detail`. End with the swap result and
+`report_path`. A frontier latency includes OpenRouter's hop and the network, so say so when you
+compare it with a local one.
 
 ## Rules
 

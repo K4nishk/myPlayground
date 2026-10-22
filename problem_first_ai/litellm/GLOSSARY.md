@@ -66,7 +66,7 @@ Bringing a backend model into memory so it becomes resident.
 _Avoid_: warm-up, cold start
 
 **Opening call**:
-The first call to an alias in a run, made once its model is resident and before its cases.
+The first call to an alias in a run, made once its model is resident (on a frontier API, where residency can't be seen, straight away) and before its cases.
 _Avoid_: warm-up call, first call, start call
 
 **Cold call**:

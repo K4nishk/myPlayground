@@ -14,7 +14,8 @@
   "permissions": {
     "allow": [
       "Bash(python3 tools/brain.py:*)",
-      "Bash(python3 labs/sovereign-ai/crossover.py:*)"
+      "Bash(python3 labs/sovereign-ai/crossover.py:*)",
+      "Bash(git merge:*)"
     ]
   }
 }

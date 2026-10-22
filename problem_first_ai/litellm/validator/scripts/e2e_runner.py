@@ -105,22 +105,28 @@ def load_cases(path: str | Path, aliases: dict[str, Alias]) -> list[Case]:
     cases = []
     for item in data.get("cases") or []:
         try:
-            case = Case(id=str(item["id"]), alias=item["alias"], api=item.get("api", "chat"), prompt=item["prompt"],
-                        output_budget=int(item["output_budget"]), checks=item.get("checks") or [],
-                        reasoning_effort=item.get("reasoning_effort"))
+            # A case may name several aliases: it runs once for each, so they answer the same prompt
+            # under the same checks.
+            names = item["alias"] if isinstance(item["alias"], list) else [item["alias"]]
+            expanded = [Case(id=str(item["id"]), alias=str(name), api=item.get("api", "chat"), prompt=item["prompt"],
+                             output_budget=int(item["output_budget"]), checks=item.get("checks") or [],
+                             reasoning_effort=item.get("reasoning_effort")) for name in names]
         except (KeyError, TypeError, ValueError) as exc:
             raise ConfigError(f"case {item.get('id', '?')!r}: missing or invalid field ({exc})") from exc
-        if case.alias not in aliases:
-            raise ConfigError(f"case {case.id!r}: alias {case.alias!r} is not in the gateway config")
-        if case.api not in CALLS:
-            raise ConfigError(f"case {case.id!r}: api must be one of {sorted(CALLS)}")
-        if not case.checks:
-            raise ConfigError(f"case {case.id!r}: needs at least one check")
-        for check in case.checks:
-            if check.get("type") not in CHECKS or "expected" not in check:
-                raise ConfigError(f"case {case.id!r}: each check needs a type from {sorted(CHECKS)} "
-                                  "and an expected value")
-        cases.append(case)
+        if not expanded:
+            raise ConfigError(f"case {item.get('id', '?')!r}: needs at least one alias")
+        for case in expanded:
+            if case.alias not in aliases:
+                raise ConfigError(f"case {case.id!r}: alias {case.alias!r} is not in the gateway config")
+            if case.api not in CALLS:
+                raise ConfigError(f"case {case.id!r}: api must be one of {sorted(CALLS)}")
+            if not case.checks:
+                raise ConfigError(f"case {case.id!r}: needs at least one check")
+            for check in case.checks:
+                if check.get("type") not in CHECKS or "expected" not in check:
+                    raise ConfigError(f"case {case.id!r}: each check needs a type from {sorted(CHECKS)} "
+                                      "and an expected value")
+            cases.append(case)
     # A run covers every alias the gateway serves, so each one needs at least one case.
     uncovered = sorted(set(aliases) - {c.alias for c in cases})
     if uncovered:
@@ -365,23 +371,25 @@ def open_alias(client: OpenAI, alias: Alias, backend: OllamaBackend | None, args
                row: dict) -> None:
     """Load the alias's model on its backend (timed as load_s), then make the opening call through the gateway.
 
-    Skipped for backends that can't report what is resident, since a load can't be told from a warm call.
+    The load is skipped for backends that can't report what is resident (a frontier API), since a load
+    can't be told from a warm call there. The opening call still runs, so connection setup stays out of
+    the first case's latency.
     """
-    if backend is None:
-        return
     try:
-        row["loaded_before_run"] = backend.footprint(alias.backend_model) is not None
-        if row["loaded_before_run"] and not args.keep_resident:
-            backend.unload(alias.backend_model)
-            time.sleep(args.unload_settle)
-            row["unload_settle_s"] = args.unload_settle
-        row["cold"] = backend.footprint(alias.backend_model) is None
-        if row["cold"]:
-            row["load_s"] = round(backend.load(alias.backend_model), 2)
+        if backend is not None:
+            row["loaded_before_run"] = backend.footprint(alias.backend_model) is not None
+            if row["loaded_before_run"] and not args.keep_resident:
+                backend.unload(alias.backend_model)
+                time.sleep(args.unload_settle)
+                row["unload_settle_s"] = args.unload_settle
+            row["cold"] = backend.footprint(alias.backend_model) is None
+            if row["cold"]:
+                row["load_s"] = round(backend.load(alias.backend_model), 2)
         reply = call_chat(client, alias.name, OPENING_PROMPT, OPENING_BUDGET)
         row["opening_call_s"] = round(reply["latency_s"], 2)
         row["misroute"] = find_misroute(alias, backend, reply["routed_model"])
-        row.update(backend.footprint(alias.backend_model) or {})
+        if backend is not None:
+            row.update(backend.footprint(alias.backend_model) or {})
     except Exception as exc:  # the cases that follow show the same problem in detail
         row["error"] = f"{type(exc).__name__}: {exc}"
 
@@ -510,8 +518,10 @@ def fmt(value: Any, unit: str = "", none: str = "-") -> str:
 
 
 def describe_alias(a: dict) -> str:
-    if a["cold"] is None:
+    if a["cold"] is None and a["opening_call_s"] is None:
         start = "not opened"
+    elif a["cold"] is None:  # a backend that can't report what is resident, such as a frontier API
+        start = f"no load to time, opening call {fmt(a['opening_call_s'], ' s')}"
     elif a["cold"]:
         before = "was loaded, unloaded first" if a["loaded_before_run"] else "wasn't loaded"
         start = f"load {fmt(a['load_s'], ' s')} ({before}), opening call {fmt(a['opening_call_s'], ' s')}"
@@ -542,7 +552,7 @@ def format_table(report: dict) -> str:
         widths = [max(len(r[i]) for r in rows) for i in range(6)]
         lines += ["", "Cases"]
         lines += ["  " + "  ".join(r[i].ljust(widths[i]) for i in range(6)) + "  " + r[6] for r in rows]
-        lines += [f"  {c['id']}: {c['detail']}" for c in cases if c["failure"]]
+        lines += [f"  {c['id']} ({c['alias']}): {c['detail']}" for c in cases if c["failure"]]
     lines += ["", "Run failures: " + ("none" if not report["failures"] else "")]
     lines += [f"  {f['kind']}: {f['detail']}" for f in report["failures"]]
     lines += ["Warnings: " + ("none" if not report["warnings"] else "")]

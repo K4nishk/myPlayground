@@ -15,11 +15,26 @@ model_list:
       # gateway and the server agree even if the server was started without it.
       num_ctx: 4096
 
+  # The frontier baseline the local tiers are compared with, through OpenRouter, where the budget
+  # for these calls is. Its latencies include OpenRouter's hop. run_proxy.sh puts the key in the
+  # gateway's environment.
+  - model_name: frontier-reasoning
+    litellm_params:
+      model: openrouter/openai/gpt-6-luna
+      api_base: https://openrouter.ai/api/v1
+      api_key: os.environ/OPENROUTER_API_KEY
+
 litellm_settings:
   # No drop_params: silently dropping an unsupported parameter could drop temperature or
   # max_tokens and quietly undo the validator's budgets. (For ollama_chat, LiteLLM already
   # maps OpenAI's reasoning_effort onto Ollama's think switch.)
   telemetry: false
+
+router_settings:
+  # Each alias has one backend and no fallback, so pausing an alias after a failure (LiteLLM's
+  # "cooldown") only hides that failure: the calls after it get LiteLLM's own 429 instead of the
+  # real error.
+  disable_cooldowns: true
 
 general_settings:
   # The value comes from the environment (run_proxy.sh sets a local default); never write a
