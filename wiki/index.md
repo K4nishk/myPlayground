@@ -8,7 +8,7 @@ Narratives: [story bank](../story-bank/index.md).
 
 | Page | Summary | Status | Updated |
 |---|---|---|---|
-| [Overview](overview.md) | How the six projects connect: dependency graph, the measurement chain, concept map | draft | 2026-10-18 |
+| [Overview](overview.md) | How the six projects and two tracks (LangGraph learning, local model gateway) connect: dependency graph, the measurement chain, concept map | draft | 2026-10-20 |
 
 ## Projects
 
@@ -19,7 +19,7 @@ Narratives: [story bank](../story-bank/index.md).
 | [03 DevOps / AIOps Platform](projects/03-devops-aiops-platform.md) | GitOps delivery, LLM golden signals, and an approval-gated classify→respond triage agent | draft | 2026-10-18 |
 | [04 KServe GPU Autoscaling](projects/04-kserve-gpu-autoscaling.md) | Autoscale on concurrency/queue depth, not GPU util; two-level pod + node scaling; scaleTarget from the knee | draft | 2026-10-18 |
 | [05 KEDA Scale-to-Zero](projects/05-keda-scale-to-zero.md) | Activation outside the pod, ScaledObject with two triggers, cold-start budget, hot/warm/cold tiers | draft | 2026-10-18 |
-| [06 Sovereign AI Engine](projects/06-sovereign-ai-engine.md) | Aish's framework: frontier baseline → 2–4B open model + PEFT + quantization + batching → crossover decision | draft | 2026-10-18 |
+| [06 Sovereign AI Engine](projects/06-sovereign-ai-engine.md) | Aish's framework: frontier baseline → 2–4B open model + PEFT + quantization + batching → crossover decision; conflict with the gateway plan's dev loop open | draft | 2026-10-20 |
 
 ## Concepts
 
@@ -48,4 +48,4 @@ Answers to queries worth keeping land in `synthesis/` and are listed here.
 
 | Page | Summary | Status | Updated |
 |---|---|---|---|
-| _none yet_ | | | |
+| [Local model gateway plan (2026-10-20)](synthesis/2026-10-20-local-model-gateway-plan.md) | LiteLLM front door with local / cluster / frontier tiers; aliases promise a role; Mac is the dev loop, capacity measured on the cluster; first slice and Planned work | draft | 2026-10-20 |

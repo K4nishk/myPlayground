@@ -4,6 +4,10 @@
       "sha256": "c838f5cf20eb97b7249f0589b8b244af00db4557d6a8cfb0ceef2d8e78fde730",
       "ingested": "2026-10-20"
     },
+    "raw/inbox/2026-10-20-local-model-gateway-decisions.md": {
+      "sha256": "b277b8de7e7148167923e7e60a4f65615f41c17894f543505890f9c4855e484f",
+      "ingested": "2026-10-21"
+    },
     "raw/roadmaps/2026-10-18-ai-infra-project-roadmap.md": {
       "sha256": "a6f9d4bf1df1ce6d5ca82f09bf105b40ccef62d60065718da6656f473024d57c",
       "ingested": "2026-10-18"

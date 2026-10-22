@@ -3,7 +3,7 @@ id: sovereign-ai-engine
 title: When does running your own model beat renting a frontier API?
 status: planned
 projects: [wiki/projects/06-sovereign-ai-engine.md]
-last_synced: 2026-10-18
+last_synced: 2026-10-21
 evidence: []
 ---
 
@@ -32,7 +32,11 @@ crossover ([blueprint](../../raw/roadmaps/2026-10-18-sovereign-ai-engine-bluepri
 - Phases: frontier baseline → zero-shot open models → LoRA/QLoRA → quantization
   → vLLM serving sweep → crossover memo.
 - Crossover from measured capacity at SLO, not peak throughput
-  ([calculator](../../labs/sovereign-ai/crossover.py)).
+  ([calculator](../../labs/sovereign-ai/crossover.py)), priced against cloud GPUs while
+  utilization is recorded on the owned cluster.
+- One LiteLLM gateway in front of local (Mac), cluster (own NVIDIA hardware) and frontier tiers,
+  comparing the same role across all three. The Mac is the dev loop; capacity is measured on the
+  cluster ([gateway plan](../../wiki/synthesis/2026-10-20-local-model-gateway-plan.md)).
 
 ## Result
 TBD — gap at each stage; P95/P99 at target concurrency; sustained req/s per
@@ -52,6 +56,9 @@ GPU; VRAM per precision; crossover volume and the go/no-go.
 ## Open threads
 - Choose the task(s) and build the eval set (phase 0).
 - Confirm with Aish how they want the framework credited in public write-ups.
+- Resolve the 2026-10-20 conflict on the project page: whether phases 0–2 move to the Mac, and at
+  what precision the 2–4B candidates are compared.
 
 ## Changelog
 - 2026-10-18 — Seeded from Aish's blueprint and the wiki design (planned).
+- 2026-10-21 — Synced with the local model gateway decisions: tiers, dev loop, crossover pricing basis (all planned; Result unchanged).

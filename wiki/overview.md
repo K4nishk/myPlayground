@@ -3,8 +3,8 @@ title: Overview — AI Infrastructure & Sovereign AI Roadmap
 type: overview
 status: draft
 tags: [roadmap, overview]
-sources: [raw/roadmaps/2026-10-18-ai-infra-project-roadmap.md, raw/roadmaps/2026-10-18-sovereign-ai-engine-blueprint.md, problem_first_ai/preread/LangChain_LangGraph_Demo.ipynb]
-updated: 2026-10-18
+sources: [raw/roadmaps/2026-10-18-ai-infra-project-roadmap.md, raw/roadmaps/2026-10-18-sovereign-ai-engine-blueprint.md, problem_first_ai/preread/LangChain_LangGraph_Demo.ipynb, raw/inbox/2026-10-20-local-model-gateway-decisions.md]
+updated: 2026-10-20
 ---
 
 # Overview — AI Infrastructure & Sovereign AI Roadmap
@@ -14,7 +14,8 @@ operate them, scale them, scale them to zero, and finally decide — with
 numbers — when a private open-weight model beats a frontier API
 ([roadmap](../raw/roadmaps/2026-10-18-ai-infra-project-roadmap.md),
 [Sovereign AI blueprint](../raw/roadmaps/2026-10-18-sovereign-ai-engine-blueprint.md)).
-A parallel LangGraph learning track supplies the agent patterns.
+A parallel LangGraph learning track supplies the agent patterns. A local model gateway track
+supplies the routing layer that 06 compares through.
 
 ```mermaid
 flowchart LR
@@ -25,6 +26,7 @@ flowchart LR
   P2 & P4 & P5 --> P6[06 Sovereign<br/>AI Engine]
   L[LangGraph<br/>two-call track] -.agent pattern.-> P1 & P3
   L -.A/B harness.-> P6
+  GW[Local model<br/>gateway track] -.local · cluster · frontier.-> P6
 ```
 
 ## The measurement chain
@@ -70,6 +72,23 @@ a hardened router, generate → critique with a structured rubric, trace handlin
 a bounded reflection loop, concurrency, and a sovereign-model A/B. It ships as an
 offline-runnable companion notebook in `labs/langgraph-two-call/`.
 
+## Local model gateway track
+
+A LiteLLM gateway gives one front door to models in three tiers
+([plan](synthesis/2026-10-20-local-model-gateway-plan.md),
+[decisions](../raw/inbox/2026-10-20-local-model-gateway-decisions.md)):
+
+- **`local`**: this Mac, the dev loop where aliases and the validator are built and checked.
+- **`cluster`**: Kubernetes on your own NVIDIA hardware, where capacity and utilization are
+  measured.
+- **`frontier`**: a vendor API, the baseline.
+
+It feeds [06](projects/06-sovereign-ai-engine.md). Comparing the same role across all three tiers
+is *Planned*. So is pricing 06's crossover against cloud GPUs while utilization is recorded on the
+owned cluster. The first slice is one `local` alias, being built on 2026-10-20. The track's plan
+conflicts with the stack 06 assumed; see the callout on the
+[project 06 page](projects/06-sovereign-ai-engine.md).
+
 ## Where things stand (2026-10-18)
 
 All six projects are **draft** — compiled from plans, no measurements yet.
@@ -82,3 +101,4 @@ track, fix the notebook's housekeeping first: rotate the leaked key prefixes, th
 
 - [AI infra project roadmap (2026-10-18)](../raw/roadmaps/2026-10-18-ai-infra-project-roadmap.md)
 - [Sovereign AI Engine blueprint — Aish's framework (2026-10-18)](../raw/roadmaps/2026-10-18-sovereign-ai-engine-blueprint.md)
+- [Local model gateway decisions (2026-10-20)](../raw/inbox/2026-10-20-local-model-gateway-decisions.md)
