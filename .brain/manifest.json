@@ -1,0 +1,12 @@
+{
+  "sources": {
+    "raw/roadmaps/2026-10-18-ai-infra-project-roadmap.md": {
+      "sha256": "a6f9d4bf1df1ce6d5ca82f09bf105b40ccef62d60065718da6656f473024d57c",
+      "ingested": "2026-10-18"
+    },
+    "raw/roadmaps/2026-10-18-sovereign-ai-engine-blueprint.md": {
+      "sha256": "767f0e8a444895d8c3d66be02a15b53ecdb704993147ca96d25e3e0054670593",
+      "ingested": "2026-10-18"
+    }
+  }
+}
